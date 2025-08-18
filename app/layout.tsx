@@ -14,9 +14,9 @@ export const metadata: Metadata = {
     siteName: '세이프가드 AI',
     images: [
       {
-        url: 'https://sfgdai.com/og-image.jpg',
-        width: 600,
-        height: 314,
+        url: 'https://sfgdai.com/og-image.png',
+        width: 1200,
+        height: 800,
         alt: '세이프가드 AI',
       },
     ],
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     title: '세이프가드 AI',
     description: '꿈을 이루는 힘, 스카이브릿지',
     images: {
-      url: 'https://sfgdai.com/og-image.jpg',
+      url: 'https://sfgdai.com/og-image.png',
       alt: '세이프가드 AI',
     },
   },
