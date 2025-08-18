@@ -151,7 +151,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
         >
           {loading && <div>로딩 중...</div>}
           {children}
-          {isFirstVisit && <OnBoarding />}
+          {/* {isFirstVisit && <OnBoarding />} */}
           {isSplashVisible && <Splash />}
         </div>
         <Toaster

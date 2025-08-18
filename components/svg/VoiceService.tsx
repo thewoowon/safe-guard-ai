@@ -80,8 +80,8 @@ const VoiceService = () => {
           y2="66.8849"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="white" stop-opacity="0.25" />
-          <stop offset="1" stopColor="white" stop-opacity="0" />
+          <stop stopColor="white" stopOpacity="0.25" />
+          <stop offset="1" stopColor="white" stopOpacity="0" />
         </linearGradient>
         <linearGradient
           id="paint2_linear_142_5104"
@@ -92,7 +92,7 @@ const VoiceService = () => {
           gradientUnits="userSpaceOnUse"
         >
           <stop stopColor="white" />
-          <stop offset="1" stopColor="white" stop-opacity="0.2" />
+          <stop offset="1" stopColor="white" stopOpacity="0.2" />
         </linearGradient>
       </defs>
     </svg>
