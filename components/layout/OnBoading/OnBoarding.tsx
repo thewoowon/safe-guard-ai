@@ -1,39 +1,39 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import styled from '@emotion/styled';
-import { COLORS } from '@/styles/color';
-import Image from 'next/image';
-import { TYPOGRAPHY } from '@/styles/typography';
+import { useState } from "react";
+import styled from "@emotion/styled";
+import { COLORS } from "@/styles/color";
+import Image from "next/image";
+import { TYPOGRAPHY } from "@/styles/typography";
 
 const ON_BOARDING: {
   [key: string]: {
-    type: 'first' | 'second' | 'final';
+    type: "first" | "second" | "final";
     src: string;
     comment: string;
   };
 } = {
   first: {
-    type: 'first',
-    src: '/images/onboarding/first.png',
-    comment: '입시와 관련된 모든 궁금증,\n질문하기를 통해 해소하세요.',
+    type: "first",
+    src: "/images/onboarding/first.png",
+    comment: "입시와 관련된 모든 궁금증,\n질문하기를 통해 해소하세요.",
   },
   second: {
-    type: 'second',
-    src: '/images/onboarding/second.png',
-    comment: '입시와 관련된 모든 소식,\n스카이 브릿지가 준비했어요.',
+    type: "second",
+    src: "/images/onboarding/second.png",
+    comment: "입시와 관련된 모든 소식,\n스카이 브릿지가 준비했어요.",
   },
   final: {
-    type: 'final',
-    src: '/images/onboarding/final.png',
-    comment: 'AI 과외 선생님 구르미를 통해\n맞춤형 전략을 컨설팅 받아보세요.',
+    type: "final",
+    src: "/images/onboarding/final.png",
+    comment: "AI 과외 선생님 구르미를 통해\n맞춤형 전략을 컨설팅 받아보세요.",
   },
 };
 
 const OnBoarding = () => {
   const [onBoarding, setOnBoarding] = useState(true);
-  const [sequence, setSequence] = useState<'first' | 'second' | 'final'>(
-    'first',
+  const [sequence, setSequence] = useState<"first" | "second" | "final">(
+    "first"
   );
 
   if (!onBoarding) {
@@ -50,57 +50,57 @@ const OnBoarding = () => {
       />
       <BottomSheet
         style={{
-          ...TYPOGRAPHY.display['large'],
+          ...TYPOGRAPHY.h1.bold,
           fontWeight: 600,
         }}
       >
         <div
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
           }}
         >
-          {ON_BOARDING[sequence].comment.split('\n').map((line, index) => (
+          {ON_BOARDING[sequence].comment.split("\n").map((line, index) => (
             <div key={index}>{line}</div>
           ))}
         </div>
         <div
           style={{
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '24px',
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "24px",
           }}
         >
           <Pagination>
-            {['first', 'second', 'final'].map((type) => (
+            {["first", "second", "final"].map((type) => (
               <div
                 key={type}
                 style={{
-                  transition: 'all 0.2s ease-in-out',
+                  transition: "all 0.2s ease-in-out",
                   width: type === sequence ? 14 : 8,
                   height: 8,
-                  borderRadius: '10px',
+                  borderRadius: "10px",
                   backgroundColor:
-                    type === sequence ? '#848C94' : COLORS.grayscale[200],
+                    type === sequence ? "#848C94" : COLORS.grayscale[200],
                 }}
               />
             ))}
           </Pagination>
           <Button
             onClick={() => {
-              if (sequence === 'first') {
-                setSequence('second');
-              } else if (sequence === 'second') {
-                setSequence('final');
+              if (sequence === "first") {
+                setSequence("second");
+              } else if (sequence === "second") {
+                setSequence("final");
               } else {
                 setOnBoarding(false);
               }
             }}
           >
-            {sequence === 'final' ? '시작하기' : '다음'}
+            {sequence === "final" ? "시작하기" : "다음"}
           </Button>
         </div>
       </BottomSheet>
