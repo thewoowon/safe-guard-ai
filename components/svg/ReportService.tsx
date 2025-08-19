@@ -1,8 +1,8 @@
-const ReportService = () => {
+const ReportService = ({ width = 93, height = 88 }: SvgIconProps) => {
   return (
     <svg
-      width="93"
-      height="88"
+      width={width}
+      height={height}
       viewBox="0 0 93 88"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"

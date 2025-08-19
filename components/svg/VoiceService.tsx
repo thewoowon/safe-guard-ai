@@ -1,8 +1,8 @@
-const VoiceService = () => {
+const VoiceService = ({ width = 92, height = 90 }: SvgIconProps) => {
   return (
     <svg
-      width="92"
-      height="90"
+      width={width}
+      height={height}
       viewBox="0 0 92 90"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"

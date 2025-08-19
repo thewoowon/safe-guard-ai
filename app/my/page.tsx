@@ -94,7 +94,7 @@ const RISK_LIST: {
 
 const MyPage = () => {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, setIsAuthenticated } = useAuth();
   const [user, setUser] = useState<{
     email: string;
   } | null>(null);
@@ -140,10 +140,13 @@ const MyPage = () => {
               color: COLORS.grayscale[1100],
             }}
           >
-            {user ? user.email : "내 계정"}
+            {isAuthenticated ? "safeguardai@gmail.com" : "내 계정"}
           </div>
         </div>
         <LoginButton
+          onClick={() => {
+            setIsAuthenticated(!isAuthenticated);
+          }}
           style={{
             ...TYPOGRAPHY.caption.medium,
           }}
@@ -271,15 +274,6 @@ const Container = styled.main`
   }
   scrollbar-width: none;
   -ms-overflow-style: none; /* IE and Edge */
-  @media (max-width: 768px) {
-    padding-top: 50px;
-  }
-  @media (max-width: 480px) {
-    padding-top: 40px;
-  }
-  @media (max-width: 360px) {
-    padding-top: 30px;
-  }
 `;
 
 const Header = styled.div`

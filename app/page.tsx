@@ -5,6 +5,10 @@ import { COLORS } from "@/styles/color";
 import { TYPOGRAPHY } from "@/styles/typography";
 import { ChatService, VoiceService, ReportService } from "@/components/svg";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import RadioToggle from "@/components/element/radio/RadioToggle";
+import { useState } from "react";
+import ImageService from "@/components/svg/ImageService";
 
 const CircleDecoration = () => {
   const router = useRouter();
@@ -201,6 +205,81 @@ const TargetDecoration = () => {
   );
 };
 
+const DoubleCircleDecoration = () => {
+  return (
+    <svg
+      width="769"
+      height="765"
+      viewBox="0 0 769 765"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <g opacity="0.13" filter="url(#filter0_f_2_3)">
+        <ellipse
+          cx="384.249"
+          cy="382.124"
+          rx="283.249"
+          ry="281.124"
+          fill="#2F58E0"
+        />
+      </g>
+      <g opacity="0.3" filter="url(#filter1_f_2_3)">
+        <ellipse
+          cx="384.43"
+          cy="382.033"
+          rx="311.43"
+          ry="186.033"
+          fill="#2F58E0"
+        />
+      </g>
+      <defs>
+        <filter
+          id="filter0_f_2_3"
+          x="0.166206"
+          y="0.166206"
+          width="768.166"
+          height="763.916"
+          filterUnits="userSpaceOnUse"
+          colorInterpolationFilters="sRGB"
+        >
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
+          <feBlend
+            mode="normal"
+            in="SourceGraphic"
+            in2="BackgroundImageFix"
+            result="shape"
+          />
+          <feGaussianBlur
+            stdDeviation="50.4169"
+            result="effect1_foregroundBlur_2_3"
+          />
+        </filter>
+        <filter
+          id="filter1_f_2_3"
+          x="8.68435"
+          y="131.684"
+          width="751.491"
+          height="500.696"
+          filterUnits="userSpaceOnUse"
+          colorInterpolationFilters="sRGB"
+        >
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
+          <feBlend
+            mode="normal"
+            in="SourceGraphic"
+            in2="BackgroundImageFix"
+            result="shape"
+          />
+          <feGaussianBlur
+            stdDeviation="32.1578"
+            result="effect1_foregroundBlur_2_3"
+          />
+        </filter>
+      </defs>
+    </svg>
+  );
+};
+
 const TitleText = () => {
   return (
     <svg
@@ -228,6 +307,130 @@ const TitleText = () => {
         </linearGradient>
       </defs>
     </svg>
+  );
+};
+
+const ToggleContext: {
+  chatting: {
+    title1: string;
+    title2: string;
+    image: React.ReactNode;
+    description1: string;
+    description2: string;
+    description3: string;
+    description4: string;
+    buttonText: string;
+  };
+  call: {
+    title1: string;
+    title2: string;
+    image: React.ReactNode;
+    description1: string;
+    description2: string;
+    description3: string;
+    description4: string;
+    buttonText: string;
+  };
+} = {
+  chatting: {
+    title1: "메시지 속",
+    title2: "위험 신호를 캐치하세요",
+    image: <ChatService width={137} height={132} />,
+    description1: "실제 사례를 바탕으로 구성된",
+    description2: "다양한 주제의 채팅 시뮬레이션.",
+    description3: "대화를 따라가며 숨어있는",
+    description4: "위험 신호를 직접 확인해보세요.",
+    buttonText: "채팅 시뮬레이션 시작",
+  },
+  call: {
+    title1: "보이스피싱, 목소리 뒤의",
+    title2: "속임수를 간파하세요",
+    image: <VoiceService width={136} height={128} />,
+    description1: "실제 통화 음성과 화면을 통해",
+    description2: "재현된 보이스피싱 시나리오.",
+    description3: "목소리와 말투 속에 숨어있는",
+    description4: "사기 신호를 잡아내 보세요.",
+    buttonText: "통화 시뮬레이션 시작",
+  },
+};
+
+const ToggleContainer = ({ toggle }: { toggle: "chatting" | "call" }) => {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+      }}
+    >
+      <BigServiceContainer>
+        <div
+          style={{
+            textAlign: "center",
+            ...TYPOGRAPHY.h2.bold,
+            color: COLORS.grayscale[1300],
+            paddingBottom: "10px",
+          }}
+        >
+          {ToggleContext[toggle].title1}
+          <br />
+          {ToggleContext[toggle].title2}
+        </div>
+        <div
+          style={{
+            padding: "16px 0",
+          }}
+        >
+          {ToggleContext[toggle].image}
+        </div>
+        <div
+          style={{
+            textAlign: "center",
+            ...TYPOGRAPHY.h1.medium,
+            color: COLORS.grayscale[1300],
+            padding: "10px 0 20px 0",
+          }}
+        >
+          {ToggleContext[toggle].description1}
+          <br />
+          {ToggleContext[toggle].description2}
+          <br />
+          {ToggleContext[toggle].description3}
+          <br />
+          {ToggleContext[toggle].description4}
+        </div>
+        <BlackButton>{ToggleContext[toggle].buttonText}</BlackButton>
+      </BigServiceContainer>
+      {toggle === "chatting" && (
+        <BigServiceContainer
+          style={{
+            background: `url("/images/sora-background.png") no-repeat center center`,
+          }}
+        >
+          <div
+            style={{
+              textAlign: "center",
+              ...TYPOGRAPHY.h2.bold,
+              color: COLORS.grayscale[1300],
+              paddingBottom: "10px",
+            }}
+          >
+            이미지를 업로드해서 실시간 <br />
+            위험을 진단해보세요
+          </div>
+          <div
+            style={{
+              padding: "16px 0",
+            }}
+          >
+            <ImageService width={136} height={128} />
+          </div>
+          <Button>👑 이미지 업로드</Button>
+        </BigServiceContainer>
+      )}
+    </div>
   );
 };
 
@@ -262,6 +465,32 @@ const SERVICE_LIST: {
 ];
 
 export default function Home() {
+  const { isAuthenticated } = useAuth();
+  const [toggle, setToggle] = useState<"chatting" | "call">("chatting");
+
+  if (isAuthenticated) {
+    return (
+      <Container>
+        <CircleDecorationContainer>
+          <CircleDecoration />
+        </CircleDecorationContainer>
+        <Header />
+        <DoubleCircleDecorationContainer>
+          <DoubleCircleDecoration />
+        </DoubleCircleDecorationContainer>
+        <ColumnContainer style={{ padding: "26px 16px 100px 16px" }}>
+          <RadioToggle
+            selectedOption={toggle}
+            setSelectedOption={(option) => {
+              setToggle(option);
+            }}
+          />
+          <ToggleContainer toggle={toggle} />
+        </ColumnContainer>
+      </Container>
+    );
+  }
+
   return (
     <Container>
       <CircleDecorationContainer>
@@ -407,6 +636,14 @@ const TargetDecorationContainer = styled.div`
   z-index: 1;
 `;
 
+const DoubleCircleDecorationContainer = styled.div`
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  z-index: 1;
+  transform: translateX(-50%);
+`;
+
 const MainTitle = styled.div`
   text-align: center;
   background: linear-gradient(110deg, #4368e3 0%, #15317c 100%);
@@ -448,13 +685,34 @@ const Button = styled.button`
   justify-content: center;
   gap: 6px;
   background: linear-gradient(90deg, #16337d 0%, #2c53d3 100%);
+  background-size: 200% 200%; /* gradient 움직임을 위해 영역 크게 */
+  color: white;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  z-index: 2;
+  transition: background-position 1s linear;
+
+  &:hover {
+    background-position: 100% 0; /* hover 시 gradient 이동 */
+  }
+`;
+
+const BlackButton = styled.button`
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background-color: ${COLORS.grayscale[1100]};
   color: white;
   border: none;
   border-radius: 25px;
   cursor: pointer;
   transition: background-color 0.3s ease;
   &:hover {
-    background-color: ${COLORS.primary[600]};
+    background-color: ${COLORS.grayscale[900]};
   }
   z-index: 2;
 `;
@@ -476,5 +734,25 @@ const ColumnContainer = styled.div`
   }
   scrollbar-width: none;
   -ms-overflow-style: none; /* IE and Edge */
+  z-index: 2;
+`;
+
+const BigServiceContainer = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 26px 16px;
+  background-color: rgba(255, 255, 255, 0.85);
+  border-radius: 24px;
+  color: white;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+  transition: transform 0.3s ease;
+  &:hover {
+    transform: scale(1.02);
+  }
   z-index: 2;
 `;
