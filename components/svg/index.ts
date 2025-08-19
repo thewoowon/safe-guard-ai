@@ -5,3 +5,5 @@ export { default as MenuIcon } from "./MenuIcon";
 export { default as VoiceService } from "./VoiceService";
 export { default as ChatService } from "./ChatService";
 export { default as ReportService } from "./ReportService";
+export { default as LeftChevronIcon } from "./LeftChevronIcon";
+export { default as RightChevronIcon } from "./RightChevronIcon";

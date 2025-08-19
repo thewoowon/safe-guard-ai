@@ -4,8 +4,10 @@ import styled from "@emotion/styled";
 import { COLORS } from "@/styles/color";
 import { TYPOGRAPHY } from "@/styles/typography";
 import { ChatService, VoiceService, ReportService } from "@/components/svg";
+import { useRouter } from "next/navigation";
 
 const CircleDecoration = () => {
+  const router = useRouter();
   return (
     <svg
       width="769"
@@ -269,71 +271,77 @@ export default function Home() {
       <TargetDecorationContainer>
         <TargetDecoration />
       </TargetDecorationContainer>
-      <MainTitle style={{ ...TYPOGRAPHY.h1.bold, marginTop: "50px" }}>
-        금융사기 <br />
-        이제 AI로 경험하세요
-      </MainTitle>
-      <Subtitle style={{ ...TYPOGRAPHY.h4.regular, marginTop: "30px" }}>
-        뉴스 데이터로 학습한 사기꾼 AI와의 <br />
-        가상 대화와 통화 시뮬레이션
-      </Subtitle>
-      <Subtitle style={{ ...TYPOGRAPHY.h4.regular, marginTop: "14px" }}>
-        당신의 금융 면역력을 키우는 <br />
-        가장 안전한 백신
-      </Subtitle>
-      <div
-        style={{
-          width: "100%",
-          position: "relative",
-          paddingRight: "16px",
-          paddingLeft: "16px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          marginTop: "50px",
-          gap: "20px",
-        }}
-      >
-        {SERVICE_LIST.map((service) => (
-          <ServiceContainer
-            key={service.title}
-            style={{ ...TYPOGRAPHY.h4.regular }}
-          >
-            <div
-              style={{ display: "flex", alignItems: "center", padding: "20px" }}
+      <ColumnContainer>
+        <MainTitle style={{ ...TYPOGRAPHY.h1.bold, marginTop: "50px" }}>
+          금융사기 <br />
+          이제 AI로 경험하세요
+        </MainTitle>
+        <Subtitle style={{ ...TYPOGRAPHY.h4.regular, marginTop: "30px" }}>
+          뉴스 데이터로 학습한 사기꾼 AI와의 <br />
+          가상 대화와 통화 시뮬레이션
+        </Subtitle>
+        <Subtitle style={{ ...TYPOGRAPHY.h4.regular, marginTop: "14px" }}>
+          당신의 금융 면역력을 키우는 <br />
+          가장 안전한 백신
+        </Subtitle>
+        <div
+          style={{
+            width: "100%",
+            position: "relative",
+            paddingRight: "16px",
+            paddingLeft: "16px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            marginTop: "50px",
+            gap: "20px",
+          }}
+        >
+          {SERVICE_LIST.map((service) => (
+            <ServiceContainer
+              key={service.title}
+              style={{ ...TYPOGRAPHY.h4.regular }}
             >
-              {service.icon}
-              <div style={{ marginLeft: "20px" }}>
-                <div
-                  style={{
-                    ...TYPOGRAPHY.h4.bold,
-                    color: COLORS.grayscale[1300],
-                    marginBottom: "4px",
-                  }}
-                >
-                  {service.title}
-                </div>
-                <div
-                  style={{
-                    ...TYPOGRAPHY.body2.medium,
-                    color: COLORS.grayscale[1300],
-                  }}
-                >
-                  {service.description1}
-                </div>
-                <div
-                  style={{
-                    ...TYPOGRAPHY.body2.medium,
-                    color: COLORS.grayscale[1300],
-                  }}
-                >
-                  {service.description2}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "20px",
+                }}
+              >
+                {service.icon}
+                <div style={{ marginLeft: "20px" }}>
+                  <div
+                    style={{
+                      ...TYPOGRAPHY.h4.bold,
+                      color: COLORS.grayscale[1300],
+                      marginBottom: "4px",
+                    }}
+                  >
+                    {service.title}
+                  </div>
+                  <div
+                    style={{
+                      ...TYPOGRAPHY.body2.medium,
+                      color: COLORS.grayscale[1300],
+                    }}
+                  >
+                    {service.description1}
+                  </div>
+                  <div
+                    style={{
+                      ...TYPOGRAPHY.body2.medium,
+                      color: COLORS.grayscale[1300],
+                    }}
+                  >
+                    {service.description2}
+                  </div>
                 </div>
               </div>
-            </div>
-          </ServiceContainer>
-        ))}
-      </div>
+            </ServiceContainer>
+          ))}
+        </div>
+      </ColumnContainer>
       <ButtonContainer>
         <Button style={{ ...TYPOGRAPHY.body1.medium }}>
           <svg
@@ -366,7 +374,7 @@ const Container = styled.main`
   flex-direction: column;
   padding-top: 57px;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   &::-webkit-scrollbar {
     display: none;
@@ -448,5 +456,25 @@ const Button = styled.button`
   &:hover {
     background-color: ${COLORS.primary[600]};
   }
+  z-index: 2;
+`;
+
+const ColumnContainer = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-bottom: 100px;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  scrollbar-width: none;
+  -ms-overflow-style: none; /* IE and Edge */
   z-index: 2;
 `;

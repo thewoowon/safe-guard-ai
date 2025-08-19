@@ -3,15 +3,15 @@ import { Toaster } from "react-hot-toast";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { memo, useEffect, useState } from "react";
 import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
-import Header from "@/components/layout/Header";
 import useLoading from "@/hooks/useLoading";
-import OnBoarding from "@/components/layout/OnBoading";
+// import OnBoarding from "@/components/layout/OnBoading";
 import Splash from "@/components/layout/Splash";
 import Bounce from "@/components/element/bounce";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
   const loading = useLoading();
-  const [isFirstVisit, setIsFirstVisit] = useState(false);
+  // const [isFirstVisit, setIsFirstVisit] = useState(false);
   const [isSplashVisible, setIsSplashVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -86,7 +86,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const splash = sessionStorage.getItem("splash");
-    const visit = localStorage.getItem("visit");
+    // const visit = localStorage.getItem("visit");
 
     if (!splash) {
       setIsSplashVisible(true);
@@ -95,12 +95,12 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
       setIsSplashVisible(false);
     }
 
-    if (!visit) {
-      setIsFirstVisit(true);
-      localStorage.setItem("visit", "true");
-    } else {
-      setIsFirstVisit(false);
-    }
+    // if (!visit) {
+    //   setIsFirstVisit(true);
+    //   localStorage.setItem("visit", "true");
+    // } else {
+    //   setIsFirstVisit(false);
+    // }
 
     setIsLoading(false); // 모든 초기화가 끝난 후 로딩 상태를 false로 설정
   }, []);
@@ -150,7 +150,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
           }}
         >
           {loading && <div>로딩 중...</div>}
-          {children}
+          <AuthProvider>{children}</AuthProvider>
           {/* {isFirstVisit && <OnBoarding />} */}
           {isSplashVisible && <Splash />}
         </div>
