@@ -146,6 +146,9 @@ const MyPage = () => {
         <LoginButton
           onClick={() => {
             setIsAuthenticated(!isAuthenticated);
+            if (isAuthenticated) {
+              router.push("/");
+            }
           }}
           style={{
             ...TYPOGRAPHY.caption.medium,
@@ -164,42 +167,58 @@ const MyPage = () => {
           나의 금융 면역력 리포트
         </ListTitle>
         <div style={{ width: "100%" }}>
-          {reports.map((report) => (
+          {reports.length > 0 ? (
+            reports.map((report) => (
+              <div
+                key={report.id}
+                style={{
+                  ...TYPOGRAPHY.body2.medium,
+                  color: COLORS.grayscale[1300],
+                  padding: "14px 20px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  width: "100%",
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div>{report.title}</div>
+                  <div
+                    style={{
+                      ...TYPOGRAPHY.caption.regular,
+                      color: COLORS.grayscale[700],
+                    }}
+                  >
+                    {report.createdAt}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <RightChevronIcon />
+                </div>
+              </div>
+            ))
+          ) : (
             <div
-              key={report.id}
               style={{
-                ...TYPOGRAPHY.body2.medium,
-                color: COLORS.grayscale[1300],
+                ...TYPOGRAPHY.caption.regular,
+                color: COLORS.grayscale[700],
                 padding: "14px 20px",
                 display: "flex",
-                justifyContent: "space-between",
+                justifyContent: "flex-start",
                 alignItems: "center",
                 width: "100%",
               }}
             >
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <div>{report.title}</div>
-                <div
-                  style={{
-                    ...TYPOGRAPHY.caption.regular,
-                    color: COLORS.grayscale[700],
-                  }}
-                >
-                  {report.createdAt}
-                </div>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                }}
-              >
-                <RightChevronIcon />
-              </div>
+              아직 생성된 리포트가 없습니다.
             </div>
-          ))}
+          )}
         </div>
       </ListContainer>
       <Stroke />
@@ -212,42 +231,58 @@ const MyPage = () => {
           실시간 위험 진단 결과
         </ListTitle>
         <div style={{ width: "100%" }}>
-          {risks.map((risks) => (
+          {risks.length > 0 ? (
+            risks.map((risks) => (
+              <div
+                key={risks.id}
+                style={{
+                  ...TYPOGRAPHY.body2.medium,
+                  color: COLORS.grayscale[1300],
+                  padding: "14px 20px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  width: "100%",
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div>{risks.title}</div>
+                  <div
+                    style={{
+                      ...TYPOGRAPHY.caption.regular,
+                      color: COLORS.grayscale[700],
+                    }}
+                  >
+                    {risks.createdAt}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <RightChevronIcon />
+                </div>
+              </div>
+            ))
+          ) : (
             <div
-              key={risks.id}
               style={{
-                ...TYPOGRAPHY.body2.medium,
-                color: COLORS.grayscale[1300],
+                ...TYPOGRAPHY.caption.regular,
+                color: COLORS.grayscale[700],
                 padding: "14px 20px",
                 display: "flex",
-                justifyContent: "space-between",
+                justifyContent: "flex-start",
                 alignItems: "center",
                 width: "100%",
               }}
             >
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <div>{risks.title}</div>
-                <div
-                  style={{
-                    ...TYPOGRAPHY.caption.regular,
-                    color: COLORS.grayscale[700],
-                  }}
-                >
-                  {risks.createdAt}
-                </div>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                }}
-              >
-                <RightChevronIcon />
-              </div>
+              아직 진단 결과가 없습니다.
             </div>
-          ))}
+          )}
         </div>
       </ListContainer>
     </Container>

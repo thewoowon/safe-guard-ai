@@ -1,4 +1,8 @@
-const LeftChevronIcon = ({ width = 24, height = 24 }: SvgIconProps) => {
+const LeftChevronIcon = ({
+  width = 24,
+  height = 24,
+  fill = "#111111",
+}: SvgIconProps) => {
   return (
     <svg
       width={width}
@@ -9,7 +13,7 @@ const LeftChevronIcon = ({ width = 24, height = 24 }: SvgIconProps) => {
     >
       <path
         d="M14.998 19L7.99805 12L14.998 5"
-        stroke="#111111"
+        stroke={fill}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"

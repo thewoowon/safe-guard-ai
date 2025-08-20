@@ -355,6 +355,7 @@ const ToggleContext: {
 };
 
 const ToggleContainer = ({ toggle }: { toggle: "chatting" | "call" }) => {
+  const router = useRouter();
   return (
     <div
       style={{
@@ -401,35 +402,46 @@ const ToggleContainer = ({ toggle }: { toggle: "chatting" | "call" }) => {
           <br />
           {ToggleContext[toggle].description4}
         </div>
-        <BlackButton>{ToggleContext[toggle].buttonText}</BlackButton>
-      </BigServiceContainer>
-      {toggle === "chatting" && (
-        <BigServiceContainer
-          style={{
-            background: `url("/images/sora-background.png") no-repeat center center`,
+        <BlackButton
+          onClick={() => {
+            router.push(toggle === "chatting" ? "/chat" : "/call");
           }}
         >
-          <div
-            style={{
-              textAlign: "center",
-              ...TYPOGRAPHY.h2.bold,
-              color: COLORS.grayscale[1300],
-              paddingBottom: "10px",
-            }}
-          >
-            이미지를 업로드해서 실시간 <br />
-            위험을 진단해보세요
-          </div>
-          <div
-            style={{
-              padding: "16px 0",
-            }}
-          >
-            <ImageService width={136} height={128} />
-          </div>
-          <Button>👑 이미지 업로드</Button>
-        </BigServiceContainer>
-      )}
+          {ToggleContext[toggle].buttonText}
+        </BlackButton>
+      </BigServiceContainer>
+
+      <BigServiceContainer
+        style={{
+          background: `url("/images/sora-background.png") no-repeat center center`,
+        }}
+      >
+        <div
+          style={{
+            textAlign: "center",
+            ...TYPOGRAPHY.h2.bold,
+            color: COLORS.grayscale[1300],
+            paddingBottom: "10px",
+          }}
+        >
+          이미지를 업로드해서 실시간 <br />
+          위험을 진단해보세요
+        </div>
+        <div
+          style={{
+            padding: "16px 0",
+          }}
+        >
+          <ImageService width={136} height={128} />
+        </div>
+        <Button
+          onClick={() => {
+            router.push("/upload");
+          }}
+        >
+          👑 이미지 업로드
+        </Button>
+      </BigServiceContainer>
     </div>
   );
 };
