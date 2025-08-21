@@ -8,6 +8,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Image from "next/image";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import customAxios from "@/lib/axios";
+import { useAuthStore } from "@/stores/authStore";
+import { useImageReportStore } from "@/stores/imageReportStore";
 
 const LoaderLottie = () => {
   return (
@@ -68,6 +71,42 @@ const UploadPage = () => {
   const [myUploadUrl, setMyUploadUrl] = useState<string | null>(null);
   const handleImageUpload = (file: File) => {
     setFile(file);
+  };
+
+  const analysisRequest = async () => {
+    if (!file) return;
+    setIsLoading(true);
+    setOverLimit(false);
+    setIsError(false);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await customAxios.post(
+        "/api/simulation/image",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
+          },
+        }
+      );
+
+      if (response.status !== 200) {
+        setIsError(true);
+        return;
+      }
+
+      console.log("Image upload response:", response.data);
+
+      useImageReportStore.getState().setImageReportResult(response.data);
+      router.push("/upload/analysis");
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      setIsError(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -221,10 +260,7 @@ const UploadPage = () => {
               ? COLORS.grayscale[1100]
               : COLORS.grayscale[500],
           }}
-          onClick={() => {
-            if (!file) return;
-            router.push("/upload/analysis");
-          }}
+          onClick={analysisRequest}
           disabled={!file}
         >
           AI에게 위험도 분석 요청하기

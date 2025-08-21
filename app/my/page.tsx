@@ -1,12 +1,14 @@
 "use client";
 
 import { LeftChevronIcon, RightChevronIcon } from "@/components/svg";
-import { useAuth } from "@/contexts/AuthContext";
 import { COLORS } from "@/styles/color";
 import { TYPOGRAPHY } from "@/styles/typography";
 import styled from "@emotion/styled";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useAuthStore } from "@/stores/authStore";
+import { useQuery } from "@tanstack/react-query";
+import customAxios from "@/lib/axios";
 
 const LogoBall = () => {
   return (
@@ -94,13 +96,63 @@ const RISK_LIST: {
 
 const MyPage = () => {
   const router = useRouter();
-  const { isAuthenticated, setIsAuthenticated } = useAuth();
-  const [user, setUser] = useState<{
-    email: string;
-  } | null>(null);
-  const [reports, setReports] = useState(REPORT_LIST);
-  const [lawyerReports, setLawyerReports] = useState(REPORT_LIST);
-  const [risks, setRisks] = useState(RISK_LIST);
+  const [user, setUser] = useState<User | null>(null);
+
+  const { data, refetch } = useQuery({
+    queryKey: ["user"],
+    queryFn: async () => {
+      if (!useAuthStore.getState().accessToken) return null;
+      const response = await customAxios.get(`/user/getUserInfo`, {
+        headers: {
+          Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
+        },
+      });
+      if (response.status !== 200) {
+        throw new Error("프로필 정보를 가져오는 데 실패했습니다.");
+      }
+
+      console.log("User data:", response.data);
+      return response.data;
+    },
+  });
+
+  const { data: reportData, refetch: refetchReports } = useQuery<ReportResult>({
+    queryKey: ["reports"],
+    queryFn: async () => {
+      if (!useAuthStore.getState().accessToken) return [];
+      const response = await customAxios.get(`/api/simulation/resultList`, {
+        headers: {
+          Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
+        },
+      });
+      if (response.status !== 200) {
+        throw new Error("리포트 정보를 가져오는 데 실패했습니다.");
+      }
+
+      console.log("Report data:", response.data);
+      return response.data;
+    },
+  });
+
+  const logout = async () => {
+    const response = await customAxios.post(
+      "/user/logout",
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
+        },
+      }
+    );
+
+    if (response.status === 200) {
+      useAuthStore.getState().setAccessToken(null);
+      setUser(null);
+      router.push("/");
+    } else {
+      console.error("로그아웃 실패:", response.data);
+    }
+  };
   return (
     <Container>
       <Header>
@@ -141,215 +193,224 @@ const MyPage = () => {
               color: COLORS.grayscale[1100],
             }}
           >
-            {isAuthenticated ? "safeguardai@gmail.com" : "내 계정"}
+            {!!useAuthStore.getState().accessToken ? data?.email : "내 계정"}
           </div>
         </div>
         <LoginButton
           onClick={() => {
-            setIsAuthenticated(!isAuthenticated);
-            if (isAuthenticated) {
-              router.push("/");
+            if (!!useAuthStore.getState().accessToken) {
+              logout();
+            } else {
+              // window.location.href =
+              //   "https://api.sfgdai.com/oauth2/authorization/google";
+              useAuthStore.getState().setAccessToken("1");
+              refetch();
+              refetchReports();
+              console.log("로그인");
+              // router.push("/");
             }
           }}
           style={{
             ...TYPOGRAPHY.caption.medium,
           }}
         >
-          {isAuthenticated ? "로그아웃" : "로그인"}
+          {!!useAuthStore.getState().accessToken ? "로그아웃" : "로그인"}
         </LoginButton>
       </div>
       <Stroke />
-      <ListContainer>
-        <ListTitle
-          style={{
-            ...TYPOGRAPHY.caption.medium,
-          }}
-        >
-          나의 금융 면역력 리포트
-        </ListTitle>
-        <div style={{ width: "100%" }}>
-          {reports.length > 0 ? (
-            reports.map((report) => (
+      <ListAllContainer>
+        <ListContainer>
+          <ListTitle
+            style={{
+              ...TYPOGRAPHY.caption.medium,
+            }}
+          >
+            나의 금융 면역력 리포트
+          </ListTitle>
+          <div style={{ width: "100%" }}>
+            {reportData && reportData.reportList?.length > 0 ? (
+              reportData.reportList.map((report) => (
+                <div
+                  key={report.id}
+                  style={{
+                    ...TYPOGRAPHY.body2.medium,
+                    color: COLORS.grayscale[1300],
+                    padding: "14px 20px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    width: "100%",
+                  }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <div>{report.title}</div>
+                    <div
+                      style={{
+                        ...TYPOGRAPHY.caption.regular,
+                        color: COLORS.grayscale[700],
+                      }}
+                    >
+                      {report.createdAt}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <RightChevronIcon />
+                  </div>
+                </div>
+              ))
+            ) : (
               <div
-                key={report.id}
                 style={{
-                  ...TYPOGRAPHY.body2.medium,
-                  color: COLORS.grayscale[1300],
+                  ...TYPOGRAPHY.caption.regular,
+                  color: COLORS.grayscale[700],
                   padding: "14px 20px",
                   display: "flex",
-                  justifyContent: "space-between",
+                  justifyContent: "flex-start",
                   alignItems: "center",
                   width: "100%",
                 }}
               >
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <div>{report.title}</div>
-                  <div
-                    style={{
-                      ...TYPOGRAPHY.caption.regular,
-                      color: COLORS.grayscale[700],
-                    }}
-                  >
-                    {report.createdAt}
-                  </div>
-                </div>
+                아직 생성된 리포트가 없습니다.
+              </div>
+            )}
+          </div>
+        </ListContainer>
+        <Stroke />
+        <ListContainer>
+          <ListTitle
+            style={{
+              ...TYPOGRAPHY.caption.medium,
+            }}
+          >
+            AI 변호사 심층 분석 리포트
+          </ListTitle>
+          <div style={{ width: "100%" }}>
+            {reportData && reportData.deepReportList?.length > 0 ? (
+              reportData.deepReportList.map((report) => (
                 <div
+                  key={report.id}
                   style={{
+                    ...TYPOGRAPHY.body2.medium,
+                    color: COLORS.grayscale[1300],
+                    padding: "14px 20px",
                     display: "flex",
+                    justifyContent: "space-between",
                     alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
+                    width: "100%",
                   }}
                 >
-                  <RightChevronIcon />
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <div>{report.title}</div>
+                    <div
+                      style={{
+                        ...TYPOGRAPHY.caption.regular,
+                        color: COLORS.grayscale[700],
+                      }}
+                    >
+                      {report.createdAt}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <RightChevronIcon />
+                  </div>
                 </div>
-              </div>
-            ))
-          ) : (
-            <div
-              style={{
-                ...TYPOGRAPHY.caption.regular,
-                color: COLORS.grayscale[700],
-                padding: "14px 20px",
-                display: "flex",
-                justifyContent: "flex-start",
-                alignItems: "center",
-                width: "100%",
-              }}
-            >
-              아직 생성된 리포트가 없습니다.
-            </div>
-          )}
-        </div>
-      </ListContainer>
-      <Stroke />
-      <ListContainer>
-        <ListTitle
-          style={{
-            ...TYPOGRAPHY.caption.medium,
-          }}
-        >
-          AI 변호사 심층 분석 리포트
-        </ListTitle>
-        <div style={{ width: "100%" }}>
-          {lawyerReports.length > 0 ? (
-            lawyerReports.map((report) => (
+              ))
+            ) : (
               <div
-                key={report.id}
                 style={{
-                  ...TYPOGRAPHY.body2.medium,
-                  color: COLORS.grayscale[1300],
+                  ...TYPOGRAPHY.caption.regular,
+                  color: COLORS.grayscale[700],
                   padding: "14px 20px",
                   display: "flex",
-                  justifyContent: "space-between",
+                  justifyContent: "flex-start",
                   alignItems: "center",
                   width: "100%",
                 }}
               >
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <div>{report.title}</div>
-                  <div
-                    style={{
-                      ...TYPOGRAPHY.caption.regular,
-                      color: COLORS.grayscale[700],
-                    }}
-                  >
-                    {report.createdAt}
-                  </div>
-                </div>
+                아직 생성된 리포트가 없습니다.
+              </div>
+            )}
+          </div>
+        </ListContainer>
+        <Stroke />
+        <ListContainer>
+          <ListTitle
+            style={{
+              ...TYPOGRAPHY.caption.medium,
+            }}
+          >
+            실시간 위험 진단 결과
+          </ListTitle>
+          <div style={{ width: "100%" }}>
+            {reportData && reportData.imageReportList?.length > 0 ? (
+              reportData.imageReportList.map((risks) => (
                 <div
+                  key={risks.id}
                   style={{
+                    ...TYPOGRAPHY.body2.medium,
+                    color: COLORS.grayscale[1300],
+                    padding: "14px 20px",
                     display: "flex",
+                    justifyContent: "space-between",
                     alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
+                    width: "100%",
                   }}
                 >
-                  <RightChevronIcon />
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <div>{risks.title}</div>
+                    <div
+                      style={{
+                        ...TYPOGRAPHY.caption.regular,
+                        color: COLORS.grayscale[700],
+                      }}
+                    >
+                      {risks.createdAt}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <RightChevronIcon />
+                  </div>
                 </div>
-              </div>
-            ))
-          ) : (
-            <div
-              style={{
-                ...TYPOGRAPHY.caption.regular,
-                color: COLORS.grayscale[700],
-                padding: "14px 20px",
-                display: "flex",
-                justifyContent: "flex-start",
-                alignItems: "center",
-                width: "100%",
-              }}
-            >
-              아직 생성된 리포트가 없습니다.
-            </div>
-          )}
-        </div>
-      </ListContainer>
-      <Stroke />
-      <ListContainer>
-        <ListTitle
-          style={{
-            ...TYPOGRAPHY.caption.medium,
-          }}
-        >
-          실시간 위험 진단 결과
-        </ListTitle>
-        <div style={{ width: "100%" }}>
-          {risks.length > 0 ? (
-            risks.map((risks) => (
+              ))
+            ) : (
               <div
-                key={risks.id}
                 style={{
-                  ...TYPOGRAPHY.body2.medium,
-                  color: COLORS.grayscale[1300],
+                  ...TYPOGRAPHY.caption.regular,
+                  color: COLORS.grayscale[700],
                   padding: "14px 20px",
                   display: "flex",
-                  justifyContent: "space-between",
+                  justifyContent: "flex-start",
                   alignItems: "center",
                   width: "100%",
                 }}
               >
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <div>{risks.title}</div>
-                  <div
-                    style={{
-                      ...TYPOGRAPHY.caption.regular,
-                      color: COLORS.grayscale[700],
-                    }}
-                  >
-                    {risks.createdAt}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                  }}
-                >
-                  <RightChevronIcon />
-                </div>
+                아직 진단 결과가 없습니다.
               </div>
-            ))
-          ) : (
-            <div
-              style={{
-                ...TYPOGRAPHY.caption.regular,
-                color: COLORS.grayscale[700],
-                padding: "14px 20px",
-                display: "flex",
-                justifyContent: "flex-start",
-                alignItems: "center",
-                width: "100%",
-              }}
-            >
-              아직 진단 결과가 없습니다.
-            </div>
-          )}
-        </div>
-      </ListContainer>
+            )}
+          </div>
+        </ListContainer>
+      </ListAllContainer>
     </Container>
   );
 };
@@ -430,4 +491,16 @@ const ListContainer = styled.div`
 const ListTitle = styled.div`
   color: ${COLORS.grayscale[800]};
   padding: 16px 20px 6px 20px;
+`;
+
+const ListAllContainer = styled.div`
+  flex: 1;
+  width: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  scrollbar-width: none; /* IE and Edge */
+  -ms-overflow-style: none; /* IE and Edge */
 `;

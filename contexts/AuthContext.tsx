@@ -1,9 +1,12 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
 
 type AuthContextType = {
+  accessToken: string | null;
+  setAccessToken: (token: string | null) => void;
   isAuthenticated: boolean;
-  setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean>>;
+  isLoading: boolean;
   initializeAuth: () => Promise<void>;
+  logout: () => void;
 };
 
 export const AuthContext = createContext<AuthContextType | undefined>(
@@ -13,20 +16,25 @@ export const AuthContext = createContext<AuthContextType | undefined>(
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const logout = () => {
+    setAccessToken(null);
+    // 서버 로그아웃 API 호출 등 추가
+  };
 
   const initializeAuth = async () => {
-    // try {
-    //   const isValid = await validateAccessToken();
-    //   if (isValid) {
-    //     setIsAuthenticated(true);
-    //     return;
-    //   }
-    // } catch (e) {
-    //   console.error("Auth init error:", e);
-    //   await logout();
-    //   setIsAuthenticated(false);
-    // }
+    try {
+      // 예시: 서버에 토큰 검증 API 요청
+      // const isValid = await validateAccessToken();
+      // if (isValid) setAccessToken("validTokenFromServer");
+    } catch (e) {
+      console.error("Auth init error:", e);
+      logout();
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -36,9 +44,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   return (
     <AuthContext.Provider
       value={{
-        isAuthenticated,
-        setIsAuthenticated,
+        accessToken,
+        setAccessToken,
+        isAuthenticated: !!accessToken,
+        isLoading,
         initializeAuth,
+        logout,
       }}
     >
       {children}

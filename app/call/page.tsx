@@ -9,8 +9,19 @@ import { COLORS } from "@/styles/color";
 import { TYPOGRAPHY } from "@/styles/typography";
 import styled from "@emotion/styled";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import { useMutation } from "@tanstack/react-query";
+import customAxios from "@/lib/axios";
+import Typewriter from "@/components/effect/Typewriter";
+import { useAuthStore } from "@/stores/authStore";
+
+type SpeechRecognitionStatus =
+  | "onstart"
+  | "onspeechstart"
+  | "onspeechend"
+  | "error"
+  | "onend";
 
 const LoaderLottie = () => {
   return (
@@ -28,14 +39,251 @@ const LoaderLottie = () => {
 
 const CallPage = () => {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [shouldPulse, setShouldPulse] = useState(false);
+  const [text, setText] = useState("시작하기 버튼을 눌러 말해보세요!");
+  const [status, setStatus] = useState<SpeechRecognitionStatus>("onend");
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const audioObjectRef = useRef<HTMLAudioElement | null>(null);
   const [listening, setListening] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isMVideoLoading, setIsMVideoLoading] = useState(false);
+  const [isMVideoLoading, setIsMVideoLoading] = useState(true);
   const mVideoRef = useRef<HTMLVideoElement>(null);
+  const [gptSpeech, setGptSpeech] = useState(true);
+  const [communicationContext, setCommunicationContext] = useState<
+    {
+      content: string;
+      role: "user" | "assistant";
+    }[]
+  >([]);
+  const [chat, setChat] = useState<string[]>([]);
+  const [firstChat, setFirstChat] = useState<FirstChat | null>(null);
 
   const handleMVideoCanPlay = () => {
+    console.log("비디오가 준비되었습니다.");
     setIsMVideoLoading(false);
   };
+
+  const handleMVideoCanPlayAndPlay = () => {
+    if (mVideoRef.current) {
+      mVideoRef.current.play().catch((error) => {
+        console.error("비디오 재생 오류:", error);
+        handleMVideoCanPlay();
+      });
+    }
+  };
+
+  const fetchFirstChat = async () => {
+    try {
+      const response = await customAxios.get(
+        "/api/simulation/voice/firstTurn",
+        {
+          params: {
+            type: "보이스피싱",
+          },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
+          },
+        }
+      );
+
+      if (response.status !== 200) {
+        throw new Error("첫 번째 채팅을 가져오는 데 실패했습니다.");
+      }
+      return response.data;
+    } catch (error) {
+      console.error("첫 번째 채팅 가져오기 실패:", error);
+      alert("첫 번째 채팅을 가져오는 데 실패했습니다. 다시 시도해주세요.");
+      return null;
+    }
+  };
+
+  const { mutate: sendMessage } = useMutation({
+    mutationFn: async (message: string) => {
+      try {
+        const response = await customAxios.post(
+          "/api/simulation/voice/turn",
+          {
+            sessionId: firstChat?.sessionId || "",
+            turn: firstChat?.turn || 0,
+            answer: message,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
+            },
+            responseType: "json", // 그대로 둬도 됨
+            withCredentials: true,
+          }
+        );
+
+        if (response.status !== 200) {
+          throw new Error("메시지 전송에 실패했습니다.");
+        }
+        console.log("메시지 전송 성공:", response.data);
+        
+
+        return response.data;
+      } catch (error) {
+        console.error("오디오 요청 실패:", error);
+        throw error;
+      }
+    },
+    onSuccess: (data) => {
+      const audioData = data as {
+        text: string;
+        audio: string; // base64 문자열
+      };
+
+      console.log("오디오 데이터:", audioData);
+
+      // base64를 Blob으로 변환
+      const byteString = atob(
+        audioData.audio.replace(/^data:audio\/mpeg;base64,/, "")
+      );
+      const byteArray = new Uint8Array(byteString.length);
+      for (let i = 0; i < byteString.length; i++) {
+        byteArray[i] = byteString.charCodeAt(i);
+      }
+      const blob = new Blob([byteArray], { type: "audio/mpeg" });
+
+      const audioUrl = URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+      audioObjectRef.current = audio; // 오디오 객체 저장
+      audio.addEventListener("canplaythrough", () => {
+        audio.play();
+      });
+      setGptSpeech(true); // GPT 음성 재생 상태 업데이트
+
+      console.log("오디오 재생:", audioData.text);
+      setCommunicationContext((prev) => [
+        ...prev,
+        { content: audioData.text, role: "assistant" },
+      ]);
+      audio.onended = () => {
+        setLoading(false); // 오디오 재생이 끝나면 로딩 상태 해제
+        setGptSpeech(false); // GPT 음성 재생 상태 해제
+      }; // 오디오 재생이 끝나면 로딩 상태 해제
+      setText(`🤖 "${audioData.text}"`);
+    },
+    onError: (error) => {
+      console.error("메시지 전송 실패:", error);
+      setText("❌ 메시지 전송 실패");
+    },
+  });
+
+  const startListening = () => {
+    if (!recognitionRef.current) return;
+
+    try {
+      recognitionRef.current.start();
+      setListening(true);
+      setShouldPulse(true); // 비디오 애니메이션 시작
+      // setStatus("🟢 인식 시작됨");
+      setStatus("onstart");
+      setText("🎧 듣는 중입니다. 말해보세요!");
+    } catch (err) {
+      console.error("인식 시작 실패:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const SpeechRecognition =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("이 브라우저는 음성 인식을 지원하지 않습니다.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "ko-KR";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.continuous = false;
+
+    recognition.onstart = () => {
+      // setStatus("🟢 인식 시작됨");
+      setStatus("onstart");
+      setShouldPulse(true);
+    };
+
+    recognition.onspeechstart = () => {
+      // setStatus("🗣️ 말하는 중...");
+      setStatus("onspeechstart");
+      setShouldPulse(true);
+    };
+
+    recognition.onspeechend = () => {
+      // setStatus("🤫 말 멈춤, 인식 중...");
+      setStatus("onspeechend");
+      setShouldPulse(false);
+      recognition.stop(); // 자동으로 인식 종료
+    };
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      // setStatus("✅ 인식 결과 수신됨");
+      const transcript = event.results[0][0].transcript;
+      const confidence = event.results[0][0].confidence;
+
+      setCommunicationContext((prev) => [
+        ...prev,
+        { content: transcript, role: "user" },
+      ]);
+      setText("응답을 기다리고 있습니다");
+      setLoading(true); // 로딩 상태로 변경
+      setListening(false); // 음성 인식 상태 해제
+      setShouldPulse(false); // 비디오 애니메이션 중지
+      console.log("인식된 텍스트:", transcript, "신뢰도:", confidence);
+      sendMessage(transcript); // 메시지 전송
+      recognition.stop(); // 인식 종료
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onerror = (event: any) => {
+      // setStatus("🔴 오류 발생");
+      setStatus("error");
+      setShouldPulse(false);
+    };
+
+    recognition.onend = () => {
+      // setStatus("🔵 인식 종료됨");
+      setStatus("onend");
+      setShouldPulse(false);
+    };
+
+    recognitionRef.current = recognition;
+  }, [sendMessage]);
+
+  useEffect(() => {
+    const fetchInitialChat = async () => {
+      const firstChat = await fetchFirstChat();
+      console.log("첫 번째 채팅:", firstChat);
+      if (firstChat) {
+        setFirstChat(firstChat);
+        setChat((prev) => [...prev, firstChat.speech]);
+        setCommunicationContext((prev) => [
+          ...prev,
+          { content: firstChat.speech, role: "assistant" },
+        ]);
+      }
+    };
+
+    fetchInitialChat();
+
+    // const utterance = new SpeechSynthesisUtterance(
+    //   "안녕하세요, 이것은 웹 API의 TTS 기능입니다."
+    // );
+    // utterance.lang = "ko-KR"; // 한국어
+    // utterance.rate = 1; // 기본 속도
+    // utterance.pitch = 1; // 기본 음조
+    // speechSynthesis.speak(utterance);
+  }, []);
 
   return (
     <Container>
@@ -72,55 +320,149 @@ const CallPage = () => {
       </Header>
       <div style={{ width: "100%", padding: "0 16px" }}>
         <VideoContainer>
-          {isMVideoLoading ? (
-            <LoaderLottie />
-          ) : (
-            <VideoEl
-              ref={mVideoRef}
-              loop
-              preload="auto"
-              playsInline
-              // 더 일찍: onLoadedMetadata / 프레임 준비: onLoadedData / 실제 재생 시작: onPlaying
-              onLoadedData={() => handleMVideoCanPlay()}
-              onError={(e) => {
-                console.error("video error", e);
-                handleMVideoCanPlay();
+          {firstChat && isMVideoLoading && (
+            <div
+              style={{
+                position: "absolute",
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: COLORS.grayscale[1300],
+                borderRadius: "10px",
+                zIndex: 1,
               }}
             >
-              <source src="/videos/prosecutors.mp4" type="video/mp4" />
-              비디오를 지원하지 않는 브라우저입니다.
-            </VideoEl>
+              <LoaderLottie />
+            </div>
           )}
+          <VideoEl
+            ref={mVideoRef}
+            loop
+            preload="auto"
+            playsInline
+            // 더 일찍: onLoadedMetadata / 프레임 준비: onLoadedData / 실제 재생 시작: onPlaying
+            onLoadedData={() => handleMVideoCanPlay()}
+            onError={(e) => {
+              console.error("video error", e);
+              handleMVideoCanPlay();
+            }}
+          >
+            <source src="/videos/prosecutors.mp4" type="video/mp4" />
+            비디오를 지원하지 않는 브라우저입니다.
+          </VideoEl>
         </VideoContainer>
         <ChatContainer>
-          <ChatMessage>
-            안녕하세요, 서울중앙지검 이상철 수사관입니다.혹시 최근에 본인 명의로
-            개설된 계좌가 범죄에 사용됐다는 연락 받으신 적 있습니까?
-          </ChatMessage>
-          <ChatMessage>
-            네, 지금 상황이 심각합니다. 경찰과 검찰에서 동시에 수사 중이라, 바로
-            확인이 필요합니다. 혹시 본인 확인을 위해 주민등록번호 뒷자리와 현재
-            사용 중인 은행명을 말씀해 주실 수 있나요?
-          </ChatMessage>
+          {chat.map((message, index) => (
+            <ChatMessage key={index}>
+              <Typewriter
+                typingSpeed={20}
+                textArray={[message]}
+                onTypingStart={() => {
+                  // 비디오 애니메이션 시작
+                  if (mVideoRef.current && !isMVideoLoading) {
+                    mVideoRef.current.play().catch((error) => {
+                      console.error("비디오 재생 오류:", error);
+                      handleMVideoCanPlay();
+                    });
+                  }
+                }}
+                onComplete={() => {
+                  if (index === chat.length - 1 && gptSpeech) {
+                    // 비디오 멈추기
+                    if (mVideoRef.current) {
+                      mVideoRef.current.pause();
+                      mVideoRef.current.currentTime = 0; // 비디오 초기화
+                    }
+                  }
+                }}
+              />
+            </ChatMessage>
+          ))}
+          {loading && (
+            <ChatMessage>
+              <WaveText
+                style={{
+                  ...TYPOGRAPHY.body1.regular,
+                  color: COLORS.grayscale[100],
+                }}
+              >
+                상대방 말 기록 중...
+              </WaveText>
+            </ChatMessage>
+          )}
+          {/* <ChatMessage>
+            <Typewriter
+              typingSpeed={20}
+              // 마지막에 오는 ''은 삭제
+              textArray={[
+                `안녕하세요, 서울중앙지검 이상철 수사관입니다.혹시 최근에 본인 명의로 개설된 계좌가 범죄에 사용됐다는 연락 받으신 적 있습니까?`,
+              ]}
+              onComplete={() => {}}
+            />
+          </ChatMessage> */}
         </ChatContainer>
       </div>
       <ButtonContainer>
+        {listening && (
+          <div
+            style={{
+              ...TYPOGRAPHY.body1.regular,
+              color: COLORS.grayscale[100],
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%,-50%)",
+            }}
+          >
+            {"듣는 중..."}
+          </div>
+        )}
         <Button
           style={{ backgroundColor: COLORS.caution.red[300] }}
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setIsModalOpen(true);
+            if (audioObjectRef.current) {
+              audioObjectRef.current.pause();
+              audioObjectRef.current.currentTime = 0; // 오디오 초기화
+            }
+            if (recognitionRef.current) {
+              recognitionRef.current.abort(); // 음성 인식 중지
+            }
+            setListening(false); // 음성 인식 상태 해제
+            setShouldPulse(false); // 비디오 애니메이션 중지
+            setText("시뮬레이션을 종료합니다. 훈련을 계속하시겠습니까?");
+            setCommunicationContext([]); // 대화 내용 초기화
+            setGptSpeech(false); // GPT 음성 재생 상태 해제
+            setLoading(false); // 로딩 상태 해제
+            if (mVideoRef.current) {
+              mVideoRef.current.pause(); // 비디오 일시 정지
+              mVideoRef.current.currentTime = 0; // 비디오 초기화
+            }
+            setIsMVideoLoading(true); // 비디오 로딩 상태로 설정
+            if (recognitionRef.current) {
+              recognitionRef.current.onend = () => {
+                setStatus("onend");
+                setShouldPulse(false);
+              }; // 음성 인식 종료 상태로 설정
+            }
+          }}
         >
           <BigXIcon />
         </Button>
         <Button
           onClick={() => {
-            setListening(!listening);
-            if (mVideoRef.current) {
-              if (listening) {
-                mVideoRef.current.pause();
-              } else {
-                mVideoRef.current.play();
-              }
+            // 현재 음성 인식이 진행 중이면 중지
+            if (recognitionRef.current && listening) {
+              recognitionRef.current.stop();
+              setListening(false);
+              setShouldPulse(false); // 비디오 애니메이션 중지
+              setLoading(false); // 로딩 상태 해제
+              setStatus("onend");
+              return;
             }
+            startListening();
           }}
           style={{
             backgroundColor: listening
@@ -273,6 +615,7 @@ const ChatContainer = styled.div`
 `;
 
 const ChatMessage = styled.div`
+  width: 100%;
   padding-top: 20px;
   word-break: break-word;
   font-size: 16px;
@@ -319,4 +662,37 @@ const MessageBoxButton = styled.div`
   padding: 0 16px;
   cursor: pointer;
   border-radius: 50px;
+`;
+
+const WaveText = styled.h1`
+  font-size: 64px;
+  font-weight: bold;
+  background: linear-gradient(
+    270deg,
+    #ff4d4d,
+    #ff9a3c,
+    #ffd93c,
+    #3cff90,
+    #3cc2ff,
+    #a43cff,
+    #ff4da6,
+    #ff4d4d
+  );
+  background-size: 1600% 1600%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: wave 8s ease infinite;
+
+  @keyframes wave {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
 `;

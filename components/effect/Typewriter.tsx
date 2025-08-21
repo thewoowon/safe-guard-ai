@@ -5,6 +5,7 @@ type TypewriterProps = {
   typingSpeed?: number;
   delayBetweenLines?: number;
   onComplete?: () => void;
+  onTypingStart?: () => void;
 };
 
 const Typewriter = ({
@@ -12,12 +13,16 @@ const Typewriter = ({
   typingSpeed = 50,
   delayBetweenLines = 300,
   onComplete,
+  onTypingStart,
 }: TypewriterProps) => {
   const [currentText, setCurrentText] = useState("");
   const [currentLine, setCurrentLine] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
 
   useEffect(() => {
+    if (onTypingStart) {
+      onTypingStart();
+    }
     if (currentLine < textArray.length) {
       if (charIndex < textArray[currentLine].length) {
         const timeout = setTimeout(() => {
@@ -44,6 +49,7 @@ const Typewriter = ({
     delayBetweenLines,
     onComplete,
     currentText,
+    onTypingStart,
   ]);
 
   return <div style={{ whiteSpace: "pre-wrap" }}>{currentText}</div>;

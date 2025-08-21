@@ -5,6 +5,7 @@ import {
   LeftChevronIcon,
   WarningCircle,
 } from "@/components/svg";
+import { useImageReportStore } from "@/stores/imageReportStore";
 import { COLORS } from "@/styles/color";
 import { TYPOGRAPHY } from "@/styles/typography";
 import styled from "@emotion/styled";
@@ -12,6 +13,7 @@ import { useRouter } from "next/navigation";
 
 const AnalysisPage = () => {
   const router = useRouter();
+  const { imageReportResult } = useImageReportStore.getState();
   return (
     <Container>
       <Header>
