@@ -4,11 +4,12 @@ import styled from "@emotion/styled";
 import { COLORS } from "@/styles/color";
 import { TYPOGRAPHY } from "@/styles/typography";
 import { ChatService, VoiceService, ReportService } from "@/components/svg";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import RadioToggle from "@/components/element/radio/RadioToggle";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ImageService from "@/components/svg/ImageService";
 import { useAuthStore } from "@/stores/authStore";
+import customAxios from "@/lib/axios";
 
 const CircleDecoration = () => {
   return (
@@ -446,11 +447,43 @@ const SERVICE_LIST: {
 ];
 
 export default function Home() {
+  const params = useSearchParams();
+  const code = params.get("code");
   const router = useRouter();
-  const { accessToken, setAccessToken } = useAuthStore.getState();
   const [toggle, setToggle] = useState<"chatting" | "call">("chatting");
 
-  if (!!accessToken) {
+  const getAccessToken = useCallback(async () => {
+    if (!code) return;
+    try {
+      const response = await customAxios.get("/token/token", {
+        params: { code },
+      });
+
+      console.log("로그인 응답:", response.headers);
+      console.log(response.headers["Accesstoken"]);
+      console.log(response.headers["refreshtoken"]);
+      if (response.status === 200) {
+        console.log("로그인 성공");
+        useAuthStore.getState().setAccessToken(response.headers["accesstoken"]);
+        localStorage.setItem("refreshToken", response.headers["refreshtoken"]);
+      } else {
+        alert("로그인에 실패했습니다. 다시 시도해주세요.");
+      }
+      router.replace("/");
+    } catch (error) {
+      console.error("로그인 중 오류 발생:", error);
+      alert("로그인에 실패했습니다. 다시 시도해주세요.");
+      router.replace("/");
+    }
+  }, [code, router]);
+
+  useEffect(() => {
+    if (code) {
+      getAccessToken();
+    }
+  }, [code, getAccessToken]);
+
+  if (!!useAuthStore.getState().accessToken) {
     return (
       <Container>
         <CircleDecorationContainer>
@@ -557,8 +590,9 @@ export default function Home() {
         <Button
           style={{ ...TYPOGRAPHY.body1.medium }}
           onClick={() => {
-            // window.location.href = "https://api.sfgdai.com/oauth2/authorization/google";
-            setAccessToken("1"); // Mock token for demonstration
+            window.location.href =
+              "https://api.sfgdai.com/oauth2/authorization/google";
+            // setAccessToken("1"); // Mock token for demonstration
           }}
         >
           <svg
