@@ -139,16 +139,19 @@ const CallPage = () => {
       }
     },
     onSuccess: (data) => {
+      console.log("메시지 전송 성공:", data);
       const audioData = data as {
-        text: string;
-        audio: string; // base64 문자열
+        sessionId: string;
+        speech: string;
+        turn: number;
+        voiceSpeech: string;
       };
 
       console.log("오디오 데이터:", audioData);
 
       // base64를 Blob으로 변환
       const byteString = atob(
-        audioData.audio.replace(/^data:audio\/mpeg;base64,/, "")
+        audioData.voiceSpeech.replace(/^data:audio\/mpeg;base64,/, "")
       );
       const byteArray = new Uint8Array(byteString.length);
       for (let i = 0; i < byteString.length; i++) {
@@ -164,16 +167,17 @@ const CallPage = () => {
       });
       setGptSpeech(true); // GPT 음성 재생 상태 업데이트
 
-      console.log("오디오 재생:", audioData.text);
+      console.log("오디오 재생:", audioData.speech);
       setCommunicationContext((prev) => [
         ...prev,
-        { content: audioData.text, role: "assistant" },
+        { content: audioData.speech, role: "assistant" },
       ]);
+      setChat((prev) => [...prev, audioData.speech]);
+      setLoading(false); // 오디오 재생이 끝나면 로딩 상태 해제
       audio.onended = () => {
-        setLoading(false); // 오디오 재생이 끝나면 로딩 상태 해제
         setGptSpeech(false); // GPT 음성 재생 상태 해제
       }; // 오디오 재생이 끝나면 로딩 상태 해제
-      setText(`🤖 "${audioData.text}"`);
+      setText(`🤖 "${audioData.speech}"`);
     },
     onError: (error) => {
       console.error("메시지 전송 실패:", error);
@@ -326,7 +330,7 @@ const CallPage = () => {
           </div>
         </div>
       </Header>
-      <div style={{ width: "100%", padding: "0 16px" }}>
+      <NoScrollContainer>
         <VideoContainer>
           {firstChat && isMVideoLoading && (
             <div
@@ -369,7 +373,7 @@ const CallPage = () => {
                 textArray={[message]}
                 onTypingStart={() => {
                   // 비디오 애니메이션 시작
-                  if (mVideoRef.current && !isMVideoLoading) {
+                  if (mVideoRef.current && !isMVideoLoading && gptSpeech) {
                     mVideoRef.current.play().catch((error) => {
                       console.error("비디오 재생 오류:", error);
                       handleMVideoCanPlay();
@@ -411,7 +415,7 @@ const CallPage = () => {
             />
           </ChatMessage> */}
         </ChatContainer>
-      </div>
+      </NoScrollContainer>
       <ButtonContainer>
         {listening && (
           <div
@@ -588,13 +592,12 @@ const VideoContainer = styled.div`
 `;
 
 const ButtonContainer = styled.div`
-  position: absolute;
-  bottom: 0;
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 0 16px;
+  margin-top: 16px;
   margin-bottom: 26px;
   gap: 135px;
 `;
@@ -611,6 +614,7 @@ const Button = styled.button`
 `;
 
 const ChatContainer = styled.div`
+  flex: 1;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -703,4 +707,19 @@ const WaveText = styled.h1`
       background-position: 0% 50%;
     }
   }
+`;
+
+const NoScrollContainer = styled.div`
+  width: 100%;
+  padding: 0 16px;
+  flex: 1;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  scrollbar-width: none;
+  -ms-overflow-style: none; /* IE and Edge */
 `;

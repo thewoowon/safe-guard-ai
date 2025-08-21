@@ -461,11 +461,11 @@ export default function Home() {
 
       console.log("로그인 응답:", response.headers);
       console.log(response.headers["Accesstoken"]);
-      console.log(response.headers["refreshtoken"]);
+      console.log(response.headers["Refreshtoken"]);
       if (response.status === 200) {
         console.log("로그인 성공");
-        useAuthStore.getState().setAccessToken(response.headers["accesstoken"]);
-        localStorage.setItem("refreshToken", response.headers["refreshtoken"]);
+        useAuthStore.getState().setAccessToken(response.headers["Accesstoken"]);
+        localStorage.setItem("refreshToken", response.headers["Refreshtoken"]);
       } else {
         alert("로그인에 실패했습니다. 다시 시도해주세요.");
       }
