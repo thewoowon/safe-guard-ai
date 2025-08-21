@@ -122,7 +122,7 @@ const ResultPage = () => {
   const createReport = async () => {
     try {
       const response = await customAxios.post(
-        "/api/chat/simulation/report",
+        "/api/simulation/report",
         {
           sessionId,
         },

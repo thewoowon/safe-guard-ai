@@ -112,7 +112,7 @@ const LawyerPage = () => {
   const createReport = async () => {
     try {
       const response = await customAxios.post(
-        "/api/chat/simulation/report",
+        "/api/simulation/deepReport",
         {
           reportId,
         },
