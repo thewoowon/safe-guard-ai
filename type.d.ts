@@ -28,13 +28,6 @@ declare global {
     imageReportList: ReportType[];
   };
 
-  type FirstChat = {
-    sessionId: string;
-    speech: string;
-    turn: number;
-    voiceSpeech: string;
-  };
-
   interface Window {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     SpeechRecognition: any;

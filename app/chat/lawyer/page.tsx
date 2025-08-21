@@ -4,11 +4,14 @@ import { DownloadIcon, LeftChevronIcon } from "@/components/svg";
 import { COLORS } from "@/styles/color";
 import { TYPOGRAPHY } from "@/styles/typography";
 import styled from "@emotion/styled";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { keyframes } from "@emotion/react";
 import { useEffect, useState } from "react";
 import ReportImage from "@/components/svg/ReportImage";
+import { useQuery } from "@tanstack/react-query";
+import { useAuthStore } from "@/stores/authStore";
+import customAxios from "@/lib/axios";
 
 const shimmer = keyframes`
   0%   { background-position: -200% 0; }
@@ -82,15 +85,70 @@ const Skeleton = styled("div")<SkeletonProps>(
 );
 
 const LawyerPage = () => {
+  const params = useSearchParams();
+  const reportId = params.get("reportId");
   const router = useRouter();
+  const [report, setReport] = useState<ReportType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
+  const { data, refetch } = useQuery({
+    queryKey: ["user"],
+    queryFn: async () => {
+      if (!useAuthStore.getState().accessToken) return null;
+      const response = await customAxios.get(`/user/getUserInfo`, {
+        headers: {
+          Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
+        },
+      });
+      if (response.status !== 200) {
+        throw new Error("프로필 정보를 가져오는 데 실패했습니다.");
+      }
 
-    return () => clearTimeout(timer);
+      console.log("User data:", response.data);
+      return response.data;
+    },
+  });
+
+  const createReport = async () => {
+    try {
+      const response = await customAxios.post(
+        "/api/chat/simulation/report",
+        {
+          reportId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
+          },
+        }
+      );
+
+      if (response.status !== 200) {
+        throw new Error("리포트 생성 실패");
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("리포트 생성 중 오류 발생:", error);
+      alert("리포트 생성 중 오류가 발생했습니다.");
+    }
+  };
+
+  useEffect(() => {
+    if (!reportId || reportId === "undefined") {
+      alert("레포트 ID가 없습니다.");
+      router.back();
+      return;
+    }
+    const fetchReport = async () => {
+      const reponse = await createReport();
+      if (reponse) {
+        setReport(reponse);
+      }
+      setIsLoading(false);
+    };
+
+    fetchReport();
   }, []);
 
   if (isLoading) {

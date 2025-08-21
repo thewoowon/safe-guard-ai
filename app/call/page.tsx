@@ -16,6 +16,13 @@ import customAxios from "@/lib/axios";
 import Typewriter from "@/components/effect/Typewriter";
 import { useAuthStore } from "@/stores/authStore";
 
+type FirstChat = {
+  sessionId: string;
+  speech: string;
+  turn: number;
+  voiceSpeech: string;
+};
+
 type SpeechRecognitionStatus =
   | "onstart"
   | "onspeechstart"
@@ -58,6 +65,7 @@ const CallPage = () => {
   >([]);
   const [chat, setChat] = useState<string[]>([]);
   const [firstChat, setFirstChat] = useState<FirstChat | null>(null);
+  const [turn, setTurn] = useState(0);
 
   const handleMVideoCanPlay = () => {
     console.log("비디오가 준비되었습니다.");
@@ -106,7 +114,7 @@ const CallPage = () => {
           "/api/simulation/voice/turn",
           {
             sessionId: firstChat?.sessionId || "",
-            turn: firstChat?.turn || 0,
+            turn: turn,
             answer: message,
           },
           {
@@ -123,7 +131,6 @@ const CallPage = () => {
           throw new Error("메시지 전송에 실패했습니다.");
         }
         console.log("메시지 전송 성공:", response.data);
-        
 
         return response.data;
       } catch (error) {
@@ -271,6 +278,7 @@ const CallPage = () => {
           ...prev,
           { content: firstChat.speech, role: "assistant" },
         ]);
+        setTurn(firstChat.turn || 0);
       }
     };
 

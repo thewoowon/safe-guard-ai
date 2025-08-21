@@ -1,12 +1,15 @@
 "use client";
 
 import { LeftChevronIcon } from "@/components/svg";
+import customAxios from "@/lib/axios";
+import { useAuthStore } from "@/stores/authStore";
 import { COLORS } from "@/styles/color";
 import { TYPOGRAPHY } from "@/styles/typography";
 import styled from "@emotion/styled";
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 type MessageType = {
   id: number;
@@ -86,14 +89,177 @@ const MESSAGE_LIST: MessageType[] = [
   },
 ];
 
-const SELECTION_LIST = [
-  "권위 있는 분이라도 서류와 사실 확인은 필수입니다.",
-  "회장님이 보증한다면 문제 없겠네요!",
-];
+type FirstChat = {
+  sessionId: string;
+  speech: string;
+  turn: number;
+  answers: {
+    answer: string;
+    verdict: string;
+  }[];
+};
+
+const codeMap: {
+  [key: string]: string;
+} = {
+  jeonse: "전세사기",
+  used_goods: "중고거래 사기",
+  family_fraud: "가족/지인 사칭",
+  romance_scam: "로맨스 스캠",
+};
+
+const LoaderLottie = () => {
+  return (
+    <DotLottieReact
+      src="/lotties/Loading spinner simplui.lottie" // public/anims/hero.lottie
+      autoplay
+      loop
+      style={{
+        width: "72px",
+        height: "72px",
+      }}
+    />
+  );
+};
 
 const SimulationPage = () => {
+  const params = useSearchParams();
+  const simulationCode = params.get("simulationCode");
+  const scrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [firstChat, setFirstChat] = useState<FirstChat | null>(null);
+  const [communicationContext, setCommunicationContext] = useState<
+    MessageType[]
+  >([]);
+  const [answers, setAnswers] = useState<
+    {
+      answer: string;
+      verdict: string;
+    }[]
+  >([]);
+  const [turn, setTurn] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const label = codeMap[simulationCode || "jeonse"] || "전세사기";
+
+  const fetchFirstChat = async () => {
+    try {
+      const response = await customAxios.get("/api/simulation/text/firstTurn", {
+        params: {
+          type: label,
+        },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
+        },
+      });
+
+      if (response.status !== 200) {
+        throw new Error("첫 번째 채팅을 가져오는 데 실패했습니다.");
+      }
+
+      return response.data as FirstChat;
+    } catch (error) {
+      console.error("첫 번째 채팅 가져오기 실패:", error);
+      alert("첫 번째 채팅을 가져오는 데 실패했습니다. 다시 시도해주세요.");
+      return null;
+    }
+  };
+
+  const postAnswer = async (answer: string, verdict: string) => {
+    try {
+      const response = await customAxios.post(
+        "/api/simulation/text/turn",
+        {
+          sessionId: firstChat?.sessionId,
+          turn,
+          answer,
+          verdict,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
+          },
+        }
+      );
+      if (response.status !== 200) {
+        throw new Error("답변 전송에 실패했습니다.");
+      }
+      console.log("답변 전송 성공:", response.data);
+      return response.data as FirstChat;
+    } catch (error) {
+      console.error("답변 전송 실패:", error);
+      alert("답변 전송에 실패했습니다. 다시 시도해주세요.");
+      return null;
+    }
+  };
+
+  const handleAnswerSelection = async (index: number) => {
+    if (selectedAnswer === index) {
+      setSelectedAnswer(null);
+      return;
+    }
+    setSelectedAnswer(index);
+    const selected = answers[index];
+    const messages = [...communicationContext];
+    const newMessage: MessageType = {
+      id: communicationContext.length + 1,
+      role: "user",
+      content: selected.answer,
+      option: "button",
+    };
+    messages.push(newMessage);
+    setCommunicationContext([...messages]);
+    const result = await postAnswer(selected.answer, selected.verdict);
+    if (result) {
+      messages.push({
+        id: communicationContext.length + 2,
+        role: "assistant",
+        content: result.speech,
+      });
+      setCommunicationContext([...messages]);
+      setTurn(result.turn || 0);
+      setAnswers(result.answers || []);
+      setSelectedAnswer(null);
+      if (result.turn > 7) {
+        alert("시뮬레이션이 종료되었습니다. 결과를 확인해주세요.");
+        router.push(`/chat/simulation/result?sessionId=${result.sessionId}`);
+      }
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const loadFirstChat = async () => {
+      const chat = await fetchFirstChat();
+      if (chat) {
+        setFirstChat(chat);
+        setCommunicationContext([
+          {
+            id: 0,
+            role: "assistant",
+            content: chat.speech,
+          },
+        ]);
+        setAnswers(chat.answers || []);
+        setTurn(chat.turn || 0);
+      }
+    };
+
+    loadFirstChat();
+  }, []);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [communicationContext]);
+
+  if (!simulationCode) {
+    return <div>시뮬레이션 ID가 없습니다.</div>;
+  }
   return (
     <Container>
       <Header>
@@ -116,14 +282,14 @@ const SimulationPage = () => {
             color: COLORS.grayscale[1300],
           }}
         >
-          스톤즈 부동산
+          {label} 시뮬레이션
         </div>
       </Header>
       <ChatArea>
-        {MESSAGE_LIST.map((message) => {
+        {communicationContext.map((message) => {
           if (message.role === "assistant") {
             return (
-              <AssistantMessageContainer key={message.id}>
+              <AssistantMessageContainer key={message.id} ref={scrollRef}>
                 <AssistantMessage>
                   <div
                     style={{
@@ -152,7 +318,7 @@ const SimulationPage = () => {
             );
           } else if (message.role === "user") {
             return (
-              <UserMessageContainer key={message.id}>
+              <UserMessageContainer key={message.id} ref={scrollRef}>
                 <UserMessage>
                   <div
                     style={{
@@ -178,20 +344,45 @@ const SimulationPage = () => {
         예시 답변 중 선택해주세요
       </SelectionGuide>
       <SelectionContainer>
-        {SELECTION_LIST.map((item, index) => (
+        {isLoading && (
+          <div
+            style={{
+              position: "absolute",
+              backgroundColor: "rgba(255, 255, 255, 0.8)",
+              zIndex: 10,
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              flexDirection: "column",
+            }}
+          >
+            <LoaderLottie />
+            <div
+              style={{
+                ...TYPOGRAPHY.body2.regular,
+                color: COLORS.grayscale[1300],
+              }}
+            >
+              답변을 분석 중입니다...
+            </div>
+          </div>
+        )}
+        {answers.map((item, index) => (
           <SelectionButton
             key={index}
             style={{
               ...TYPOGRAPHY.body2.regular,
               backgroundColor:
-                selectedAnswer === item ? COLORS.primary[50] : "white",
+                selectedAnswer === index ? COLORS.primary[50] : "white",
             }}
             onClick={() => {
-              // Handle selection logic here
-              console.log(`Selected: ${item}`);
-              setSelectedAnswer(item);
-              router.push("/chat/result");
+              if (isLoading) return;
+              setIsLoading(true);
+              handleAnswerSelection(index);
             }}
+            disabled={isLoading}
           >
             <svg
               width="20"
@@ -219,8 +410,13 @@ const SimulationPage = () => {
                 strokeLinejoin="round"
               />
             </svg>
-
-            {item}
+            <div
+              style={{
+                textAlign: "left",
+              }}
+            >
+              {item.answer}
+            </div>
           </SelectionButton>
         ))}
       </SelectionContainer>
@@ -231,7 +427,7 @@ const SimulationPage = () => {
 export default SimulationPage;
 
 const Container = styled.main`
-  background-color: ${COLORS.grayscale[300]};
+  background-color: white;
   width: 100%;
   height: calc(var(--vh, 1vh) * 100);
   position: relative;
@@ -268,7 +464,7 @@ const Header = styled.div`
 
 const SelectionContainer = styled.div`
   padding: 16px 20px 26px 20px;
-  height: 140px;
+  height: fit-content;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -278,11 +474,12 @@ const SelectionContainer = styled.div`
   border-top-right-radius: 24px;
   border-top-left-radius: 24px;
   gap: 10px;
+  position: relative;
 `;
 
 const SelectionButton = styled.button`
   width: 100%;
-  height: 44px;
+  height: fit-content;
   color: ${COLORS.grayscale[1300]};
   border: 1px solid ${COLORS.primary[200]};
   border-radius: 50px;

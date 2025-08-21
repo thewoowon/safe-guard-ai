@@ -4,12 +4,15 @@ import { LeftChevronIcon } from "@/components/svg";
 import { COLORS } from "@/styles/color";
 import { TYPOGRAPHY } from "@/styles/typography";
 import styled from "@emotion/styled";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { keyframes } from "@emotion/react";
 import { useEffect, useState } from "react";
 import ReportImage from "@/components/svg/ReportImage";
 import Parthenon from "@/components/svg/Parthenon";
+import customAxios from "@/lib/axios";
+import { useQuery } from "@tanstack/react-query";
+import { useAuthStore } from "@/stores/authStore";
 
 const shimmer = keyframes`
   0%   { background-position: -200% 0; }
@@ -82,17 +85,80 @@ const Skeleton = styled("div")<SkeletonProps>(
   })
 );
 
+type ReportType = {
+  id: number;
+  grade: string;
+  summary: string;
+  cautionPoint: string;
+  guide: string;
+  createdAt: string;
+};
+
 const ResultPage = () => {
+  const params = useSearchParams();
+  const sessionId = params.get("sessionId");
   const router = useRouter();
+  const [report, setReport] = useState<ReportType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      console.log("Loading complete");
-      setIsLoading(false);
-    }, 2000);
+  const { data, refetch } = useQuery({
+    queryKey: ["user"],
+    queryFn: async () => {
+      if (!useAuthStore.getState().accessToken) return null;
+      const response = await customAxios.get(`/user/getUserInfo`, {
+        headers: {
+          Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
+        },
+      });
+      if (response.status !== 200) {
+        throw new Error("프로필 정보를 가져오는 데 실패했습니다.");
+      }
 
-    return () => clearTimeout(timer);
+      console.log("User data:", response.data);
+      return response.data;
+    },
+  });
+
+  const createReport = async () => {
+    try {
+      const response = await customAxios.post(
+        "/api/chat/simulation/report",
+        {
+          sessionId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${useAuthStore.getState().accessToken}`,
+          },
+        }
+      );
+
+      if (response.status !== 200) {
+        throw new Error("리포트 생성 실패");
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error("리포트 생성 중 오류 발생:", error);
+      alert("리포트 생성 중 오류가 발생했습니다.");
+    }
+  };
+
+  useEffect(() => {
+    if (!sessionId) {
+      alert("세션 ID가 없습니다.");
+      router.back();
+      return;
+    }
+    const fetchReport = async () => {
+      const reponse = await createReport();
+      if (reponse) {
+        setReport(reponse);
+      }
+      setIsLoading(false);
+    };
+
+    fetchReport();
   }, []);
 
   if (isLoading) {
@@ -215,14 +281,14 @@ const ResultPage = () => {
           marginBottom: 36,
         }}
       >
-        OO님의 종합 안전 등급은
+        {data?.name || "OO"}님의 종합 안전 등급은
         <br />
         <span
           style={{
             color: COLORS.grayscale[700],
           }}
         >
-          F Level
+          {report?.grade} Level
         </span>{" "}
         입니다
       </div>
@@ -242,9 +308,7 @@ const ResultPage = () => {
               color: COLORS.grayscale[1300],
             }}
           >
-            계약 과정 전반에 걸쳐 금융 사기에 대한 경각심이 부족하여 모든 금액을
-            사기꾼에게 송금했습니다. 최소한의 의심 없이 모든 요청을 수락한 것이
-            치명적인 실수였습니다.
+            {report?.summary || "AI가 분석한 총평이 없습니다."}
           </div>
         </SelectionContainer>
         <SelectionContainer>
@@ -262,10 +326,7 @@ const ResultPage = () => {
               color: COLORS.grayscale[1300],
             }}
           >
-            {`가계약금 이후 추가적으로 요구된 '계약이행보증금', '주택임대차보호법
-            특약 가입비', '입주 청소비 예치금' 등은 모두 사기의 전형적인
-            수법입니다. 이러한 추가 비용 요구에 대해 의심하고, 집주인의 신원을
-            철저히 확인하고, 계약 전에 관련 법률 및 절차를 숙지해야 했습니다.`}
+            {report?.cautionPoint || "주의 사항이 없습니다."}
           </div>
         </SelectionContainer>
         <SelectionContainer>
@@ -283,8 +344,7 @@ const ResultPage = () => {
               color: COLORS.grayscale[1300],
             }}
           >
-            계약 과정에서 어떠한 추가 비용이나 의심스러운 요구가 있을 경우,
-            계약을 중단하고 관련 기관(경찰, 금융감독원 등)에 신고해야 합니다.
+            {report?.guide || "가이드가 없습니다."}
           </div>
         </SelectionContainer>
         <div>
@@ -326,7 +386,13 @@ const ResultPage = () => {
                     ...TYPOGRAPHY.caption.medium,
                     color: COLORS.grayscale[100],
                   }}
-                  onClick={() => router.push("/chat/lawyer")}
+                  onClick={() => {
+                    if (!report) {
+                      alert("리포트가 준비되지 않았습니다.");
+                      return;
+                    }
+                    router.push(`/chat/lawyer?reportId=${report?.id}`);
+                  }}
                 >
                   법률 분석 받기
                 </LawyerButton>

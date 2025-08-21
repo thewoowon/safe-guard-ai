@@ -50,7 +50,13 @@ const AnalysisPage = () => {
           boxSizing: "border-box",
         }}
       >
-        <DangerCircle />
+        {imageReportResult?.riskLevel === "관심" ? (
+          <InterestCircle />
+        ) : imageReportResult?.riskLevel === "주의" ? (
+          <WarningCircle />
+        ) : (
+          <DangerCircle />
+        )}
         <div
           style={{
             textAlign: "center",
@@ -59,35 +65,34 @@ const AnalysisPage = () => {
             marginTop: "16px",
           }}
         >
-          긴급! 자녀 사칭 송금 요구 메시지 <br />
-          보이스피싱 의심
+          {imageReportResult?.title}
         </div>
         <Tags>
-          {Array.from({ length: 3 }, (_, i) => (
+          {imageReportResult?.detectedKeywords.map((keyword, index) => (
             <Tag
-              key={i}
+              key={index}
               style={{
                 ...TYPOGRAPHY.body2.regular,
-                color: COLORS.caution.red[300],
+                color:
+                  imageReportResult?.riskLevel === "관심"
+                    ? COLORS.primary[500]
+                    : imageReportResult?.riskLevel === "주의"
+                      ? COLORS.caution.yellow[300]
+                      : COLORS.caution.red[300],
+                borderColor:
+                  imageReportResult?.riskLevel === "관심"
+                    ? COLORS.primary[500]
+                    : imageReportResult?.riskLevel === "주의"
+                      ? COLORS.caution.yellow[300]
+                      : COLORS.caution.red[300],
               }}
             >
-              {i === 0 ? "#보이스피싱" : i === 1 ? "#사칭" : "#송금"}
+              #{keyword}
             </Tag>
           ))}
         </Tags>
       </div>
-      <div
-        style={{
-          width: "100%",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "flex-start",
-          padding: "20px",
-          boxSizing: "border-box",
-          gap: "12px",
-        }}
-      >
+      <ScrollableContainer>
         <TextBox
           style={{
             ...TYPOGRAPHY.body2.regular,
@@ -102,13 +107,7 @@ const AnalysisPage = () => {
           >
             AI 분석 요약
           </div>
-          <div>
-            {`자녀를 사칭하여 폰 고장을 이유로 급히 송금을 요구하는 메시지입니다.
-          '해남신문 계좌'와 같이 특정 계좌를 언급하며 긴급함을 강조하는 수법은
-          전형적인 보이스피싱/스미싱 기법입니다. 메시지의 어색한 문장 구성과
-          시간 간격 또한 사기 메시지의 특징입니다. 자녀와 직접 연락하여 상황을
-          확인해야 하며, 절대 송금해서는 안 됩니다.`}
-          </div>
+          <div>{imageReportResult?.summary || "AI 분석 요약이 없습니다."}</div>
         </TextBox>
         <TextBox
           style={{
@@ -122,11 +121,9 @@ const AnalysisPage = () => {
               color: COLORS.grayscale[700],
             }}
           >
-            AI 분석 요약
+            한 줄 가이드
           </div>
-          <div>
-            {`메시지 발신자에게 직접 전화하여 상황을 확인하고, 절대로 돈을 송금하지 마세요. 금융기관에 신고하고 경찰에 사기 사건으로 접수하세요.`}
-          </div>
+          <div>{imageReportResult?.guide || "한 줄 가이드가 없습니다."}</div>
         </TextBox>
         <TextBox
           style={{
@@ -143,10 +140,10 @@ const AnalysisPage = () => {
             추출된 텍스트 원문 확인하기
           </div>
           <div>
-            {`메시지 발신자에게 직접 전화하여 상황을 확인하고, 절대로 돈을 송금하지 마세요. 금융기관에 신고하고 경찰에 사기 사건으로 접수하세요.`}
+            {imageReportResult?.extractedText || "추출된 텍스트가 없습니다."}
           </div>
         </TextBox>
-      </div>
+      </ScrollableContainer>
       {/* <WarningCircle />
       <InterestCircle /> */}
     </Container>
@@ -221,4 +218,23 @@ const TextBox = styled.div`
   display: flex;
   flex-direction: column;
   gap: 6px;
+`;
+
+const ScrollableContainer = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px;
+  box-sizing: border-box;
+  gap: 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  scrollbar-width: none;
+  -ms-overflow-style: none; /* IE and Edge */
 `;
