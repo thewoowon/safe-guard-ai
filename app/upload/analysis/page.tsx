@@ -5,15 +5,48 @@ import {
   LeftChevronIcon,
   WarningCircle,
 } from "@/components/svg";
+import customAxios from "@/lib/axios";
 import { useImageReportStore } from "@/stores/imageReportStore";
 import { COLORS } from "@/styles/color";
 import { TYPOGRAPHY } from "@/styles/typography";
 import styled from "@emotion/styled";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect } from "react";
 
 const AnalysisPage = () => {
+  const params = useSearchParams();
+  const reportId = params.get("reportId");
   const router = useRouter();
-  const { imageReportResult } = useImageReportStore.getState();
+
+  const fetchImageReport = useCallback(async () => {
+    if (!reportId) {
+      console.error("Report ID is required to fetch image report.");
+      return;
+    }
+
+    try {
+      const response = await customAxios.get(
+        `/api/simulation/imageReportInfo`,
+        {
+          params: { reportId },
+        }
+      );
+      if (response.status === 200) {
+        useImageReportStore.getState().setImageReportResult(response.data);
+      } else {
+        console.error("Failed to fetch image report:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error fetching image report:", error);
+    }
+  }, [reportId]);
+
+  // Fetch the image report when the component mounts
+  useEffect(() => {
+    fetchImageReport();
+  }, [fetchImageReport, reportId]);
+
+  console.log("리포트 ID:", reportId);
   return (
     <Container>
       <Header>
@@ -50,9 +83,11 @@ const AnalysisPage = () => {
           boxSizing: "border-box",
         }}
       >
-        {imageReportResult?.riskLevel === "관심" ? (
+        {useImageReportStore.getState().imageReportResult?.riskLevel ===
+        "관심" ? (
           <InterestCircle />
-        ) : imageReportResult?.riskLevel === "주의" ? (
+        ) : useImageReportStore.getState().imageReportResult?.riskLevel ===
+          "주의" ? (
           <WarningCircle />
         ) : (
           <DangerCircle />
@@ -65,31 +100,37 @@ const AnalysisPage = () => {
             marginTop: "16px",
           }}
         >
-          {imageReportResult?.title}
+          {useImageReportStore.getState().imageReportResult?.title}
         </div>
         <Tags>
-          {imageReportResult?.detectedKeywords.map((keyword, index) => (
-            <Tag
-              key={index}
-              style={{
-                ...TYPOGRAPHY.body2.regular,
-                color:
-                  imageReportResult?.riskLevel === "관심"
-                    ? COLORS.primary[500]
-                    : imageReportResult?.riskLevel === "주의"
-                      ? COLORS.caution.yellow[300]
-                      : COLORS.caution.red[300],
-                borderColor:
-                  imageReportResult?.riskLevel === "관심"
-                    ? COLORS.primary[500]
-                    : imageReportResult?.riskLevel === "주의"
-                      ? COLORS.caution.yellow[300]
-                      : COLORS.caution.red[300],
-              }}
-            >
-              #{keyword}
-            </Tag>
-          ))}
+          {useImageReportStore
+            .getState()
+            .imageReportResult?.detectedKeywords.map((keyword, index) => (
+              <Tag
+                key={index}
+                style={{
+                  ...TYPOGRAPHY.body2.regular,
+                  color:
+                    useImageReportStore.getState().imageReportResult
+                      ?.riskLevel === "관심"
+                      ? COLORS.primary[500]
+                      : useImageReportStore.getState().imageReportResult
+                            ?.riskLevel === "주의"
+                        ? COLORS.caution.yellow[300]
+                        : COLORS.caution.red[300],
+                  borderColor:
+                    useImageReportStore.getState().imageReportResult
+                      ?.riskLevel === "관심"
+                      ? COLORS.primary[500]
+                      : useImageReportStore.getState().imageReportResult
+                            ?.riskLevel === "주의"
+                        ? COLORS.caution.yellow[300]
+                        : COLORS.caution.red[300],
+                }}
+              >
+                #{keyword}
+              </Tag>
+            ))}
         </Tags>
       </div>
       <ScrollableContainer>
@@ -107,7 +148,10 @@ const AnalysisPage = () => {
           >
             AI 분석 요약
           </div>
-          <div>{imageReportResult?.summary || "AI 분석 요약이 없습니다."}</div>
+          <div>
+            {useImageReportStore.getState().imageReportResult?.summary ||
+              "AI 분석 요약이 없습니다."}
+          </div>
         </TextBox>
         <TextBox
           style={{
@@ -123,7 +167,10 @@ const AnalysisPage = () => {
           >
             한 줄 가이드
           </div>
-          <div>{imageReportResult?.guide || "한 줄 가이드가 없습니다."}</div>
+          <div>
+            {useImageReportStore.getState().imageReportResult?.guide ||
+              "한 줄 가이드가 없습니다."}
+          </div>
         </TextBox>
         <TextBox
           style={{
@@ -140,7 +187,8 @@ const AnalysisPage = () => {
             추출된 텍스트 원문 확인하기
           </div>
           <div>
-            {imageReportResult?.extractedText || "추출된 텍스트가 없습니다."}
+            {useImageReportStore.getState().imageReportResult?.extractedText ||
+              "추출된 텍스트가 없습니다."}
           </div>
         </TextBox>
       </ScrollableContainer>
@@ -212,6 +260,7 @@ const Tag = styled.div`
 `;
 
 const TextBox = styled.div`
+  width: 100%;
   padding: 16px 20px;
   background-color: #ffffff;
   border-radius: 16px;

@@ -254,6 +254,11 @@ const MyPage = () => {
                     </div>
                   </div>
                   <div
+                    onClick={() => {
+                      router.push(
+                        `/chat/simulation/result?reportId=${report.id}`
+                      );
+                    }}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -318,6 +323,9 @@ const MyPage = () => {
                     </div>
                   </div>
                   <div
+                    onClick={() => {
+                      router.push(`/chat/lawyer?reportId=${report.id}`);
+                    }}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -382,6 +390,9 @@ const MyPage = () => {
                     </div>
                   </div>
                   <div
+                    onClick={() => {
+                      router.push(`/upload/analysis?reportId=${risks.id}`);
+                    }}
                     style={{
                       display: "flex",
                       alignItems: "center",
