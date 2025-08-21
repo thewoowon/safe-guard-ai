@@ -14,3 +14,4 @@ export { default as WarningCircle } from "./WarningCircle";
 export { default as ProfileIcon } from "./ProfileIcon";
 export { default as MicIcon } from "./MicIcon";
 export { default as BigXIcon } from "./BigXIcon";
+export { default as DownloadIcon } from "./DownloadIcon";

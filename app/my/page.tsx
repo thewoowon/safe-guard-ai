@@ -99,6 +99,7 @@ const MyPage = () => {
     email: string;
   } | null>(null);
   const [reports, setReports] = useState(REPORT_LIST);
+  const [lawyerReports, setLawyerReports] = useState(REPORT_LIST);
   const [risks, setRisks] = useState(RISK_LIST);
   return (
     <Container>
@@ -169,6 +170,70 @@ const MyPage = () => {
         <div style={{ width: "100%" }}>
           {reports.length > 0 ? (
             reports.map((report) => (
+              <div
+                key={report.id}
+                style={{
+                  ...TYPOGRAPHY.body2.medium,
+                  color: COLORS.grayscale[1300],
+                  padding: "14px 20px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  width: "100%",
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div>{report.title}</div>
+                  <div
+                    style={{
+                      ...TYPOGRAPHY.caption.regular,
+                      color: COLORS.grayscale[700],
+                    }}
+                  >
+                    {report.createdAt}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <RightChevronIcon />
+                </div>
+              </div>
+            ))
+          ) : (
+            <div
+              style={{
+                ...TYPOGRAPHY.caption.regular,
+                color: COLORS.grayscale[700],
+                padding: "14px 20px",
+                display: "flex",
+                justifyContent: "flex-start",
+                alignItems: "center",
+                width: "100%",
+              }}
+            >
+              아직 생성된 리포트가 없습니다.
+            </div>
+          )}
+        </div>
+      </ListContainer>
+      <Stroke />
+      <ListContainer>
+        <ListTitle
+          style={{
+            ...TYPOGRAPHY.caption.medium,
+          }}
+        >
+          AI 변호사 심층 분석 리포트
+        </ListTitle>
+        <div style={{ width: "100%" }}>
+          {lawyerReports.length > 0 ? (
+            lawyerReports.map((report) => (
               <div
                 key={report.id}
                 style={{
