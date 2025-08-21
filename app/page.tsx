@@ -460,12 +460,12 @@ export default function Home() {
       });
 
       console.log("로그인 응답:", response.headers);
-      console.log(response.headers["Accesstoken"]);
-      console.log(response.headers["Refreshtoken"]);
+      console.log(response.headers["accesstoken"]);
+      console.log(response.headers["accesstoken"]);
       if (response.status === 200) {
         console.log("로그인 성공");
-        useAuthStore.getState().setAccessToken(response.headers["Accesstoken"]);
-        localStorage.setItem("refreshToken", response.headers["Refreshtoken"]);
+        useAuthStore.getState().setAccessToken(response.headers["accesstoken"]);
+        localStorage.setItem("refreshToken", response.headers["accesstoken"]);
       } else {
         alert("로그인에 실패했습니다. 다시 시도해주세요.");
       }
