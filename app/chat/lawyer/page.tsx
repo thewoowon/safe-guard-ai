@@ -13,6 +13,22 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/authStore";
 import customAxios from "@/lib/axios";
 
+type ReportGrade = "A" | "B" | "C" | "F";
+
+type DeepReportType = {
+  grade: ReportGrade;
+  summary: string;
+  recommendedAction: string;
+  createdAt: string;
+  detailLst: {
+    id: number;
+    turnNumber: string;
+    userMessage: string;
+    riskAnalysis: string;
+    legalAdvice: string;
+  }[];
+};
+
 const shimmer = keyframes`
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
@@ -88,7 +104,7 @@ const LawyerPage = () => {
   const params = useSearchParams();
   const reportId = params.get("reportId");
   const router = useRouter();
-  const [report, setReport] = useState<ReportType | null>(null);
+  const [report, setReport] = useState<DeepReportType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const { data, refetch } = useQuery({
@@ -250,7 +266,36 @@ const LawyerPage = () => {
             justifyContent: "center",
             cursor: "pointer",
           }}
-          onClick={() => router.back()}
+          onClick={() => {
+            if (!report) {
+              alert("리포트가 아직 생성되지 않았습니다.");
+              return;
+            }
+
+            console.log("report", report);
+
+            let txt = "";
+
+            txt += `리포트 생성일: ${report.createdAt}\n`;
+            txt += `종합 안전 등급: ${report.grade}\n`;
+            txt += `요약: ${report.summary}\n`;
+            txt += `권장 조치: ${report.recommendedAction}\n\n`;
+
+            report.detailLst.forEach((item) => {
+              txt += `질문: ${item.userMessage}\n`;
+              txt += `위험 분석: ${item.riskAnalysis}\n`;
+              txt += `법률 조언: ${item.legalAdvice}\n\n`;
+            });
+
+            const element = document.createElement("a");
+            const file = new Blob([txt], { type: "text/plain" });
+            element.href = URL.createObjectURL(file);
+            element.download = "interview.txt";
+            document.body.appendChild(element); // Required for this to work in FireFox
+            element.click();
+            document.body.removeChild(element); // Clean up
+            alert("리포트가 다운로드되었습니다.");
+          }}
         >
           <DownloadIcon />
         </div>
@@ -274,14 +319,21 @@ const LawyerPage = () => {
           marginBottom: 36,
         }}
       >
-        OO님의 종합 안전 등급은
+        {data?.name || "OO"}님의 종합 안전 등급은
         <br />
         <span
           style={{
-            color: COLORS.grayscale[700],
+            color:
+              report?.grade === "A"
+                ? COLORS.primary[500]
+                : report?.grade === "B"
+                  ? COLORS.caution.yellow[300]
+                  : report?.grade === "C"
+                    ? COLORS.caution.red[300]
+                    : COLORS.grayscale[700],
           }}
         >
-          F Level
+          {report?.grade || "O"} Level
         </span>{" "}
         입니다
       </div>
@@ -301,9 +353,7 @@ const LawyerPage = () => {
               color: COLORS.grayscale[1300],
             }}
           >
-            계약 과정 전반에 걸쳐 금융 사기에 대한 경각심이 부족하여 모든 금액을
-            사기꾼에게 송금했습니다. 최소한의 의심 없이 모든 요청을 수락한 것이
-            치명적인 실수였습니다.
+            {report?.summary || "리포트가 아직 생성되지 않았습니다."}
           </div>
         </SelectionContainer>
         <SelectionContainer>
@@ -315,117 +365,58 @@ const LawyerPage = () => {
           >
             위험 분석
           </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px",
-              marginBottom: "20px",
-            }}
-          >
-            <MessageContainer
-              style={{
-                ...TYPOGRAPHY.body2.medium,
-                color: COLORS.grayscale[1300],
-              }}
-            >
-              <div>2.</div>
-              알겠습니다. 이 집을 놓치고 싶지 않네요. 대신 가계약금 영수증은 꼭
-              발행해주세요.
-            </MessageContainer>
+
+          {report &&
+            report?.detailLst?.length > 0 &&
+            report?.detailLst.map((item, index) => (
+              <div
+                key={index}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                  marginBottom: "20px",
+                }}
+              >
+                <MessageContainer
+                  style={{
+                    ...TYPOGRAPHY.body2.medium,
+                    color: COLORS.grayscale[1300],
+                  }}
+                >
+                  <div>{item.turnNumber}.</div>
+                  {item.userMessage}
+                </MessageContainer>
+                <div
+                  style={{
+                    ...TYPOGRAPHY.body2.regular,
+                    color: COLORS.grayscale[1300],
+                  }}
+                >
+                  🚫️ {item.riskAnalysis}
+                </div>
+                <div
+                  style={{
+                    ...TYPOGRAPHY.body2.regular,
+                    color: COLORS.grayscale[1300],
+                  }}
+                >
+                  ✅ {item.legalAdvice}
+                </div>
+              </div>
+            ))}
+          {(!report ||
+            !report?.detailLst ||
+            report?.detailLst?.length == 0) && (
             <div
               style={{
                 ...TYPOGRAPHY.body2.regular,
                 color: COLORS.grayscale[1300],
               }}
             >
-              {`🚫️ 가계약금은 법적 구속력이 약하며, 사기꾼은 이를 이용해 돈을
-              편취할 수 있습니다. 특히 '인기 매물'을 미끼로 촉박한 상황을
-              조성하는 것은 전형적인 사기 수법입니다.`}
+              리포트가 아직 생성되지 않았습니다.
             </div>
-            <div
-              style={{
-                ...TYPOGRAPHY.body2.regular,
-                color: COLORS.grayscale[1300],
-              }}
-            >
-              {`✅ 가계약금 송금 전에 등기부등본을 확인하여 실소유주를 파악하고, 계약 조건을 명확히 기재한 가계약서를 작성해야 합니다. 급박한 상황에 휘말리지 않고 신중하게 판단해야 합니다.`}
-            </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px",
-              marginBottom: "20px",
-            }}
-          >
-            <MessageContainer
-              style={{
-                ...TYPOGRAPHY.body2.medium,
-                color: COLORS.grayscale[1300],
-              }}
-            >
-              <div>2.</div>
-              알겠습니다. 이 집을 놓치고 싶지 않네요. 대신 가계약금 영수증은 꼭
-              발행해주세요.
-            </MessageContainer>
-            <div
-              style={{
-                ...TYPOGRAPHY.body2.regular,
-                color: COLORS.grayscale[1300],
-              }}
-            >
-              {`🚫️ 가계약금은 법적 구속력이 약하며, 사기꾼은 이를 이용해 돈을
-              편취할 수 있습니다. 특히 '인기 매물'을 미끼로 촉박한 상황을
-              조성하는 것은 전형적인 사기 수법입니다.`}
-            </div>
-            <div
-              style={{
-                ...TYPOGRAPHY.body2.regular,
-                color: COLORS.grayscale[1300],
-              }}
-            >
-              {`✅ 가계약금 송금 전에 등기부등본을 확인하여 실소유주를 파악하고, 계약 조건을 명확히 기재한 가계약서를 작성해야 합니다. 급박한 상황에 휘말리지 않고 신중하게 판단해야 합니다.`}
-            </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "10px",
-              marginBottom: "20px",
-            }}
-          >
-            <MessageContainer
-              style={{
-                ...TYPOGRAPHY.body2.medium,
-                color: COLORS.grayscale[1300],
-              }}
-            >
-              <div>2.</div>
-              알겠습니다. 이 집을 놓치고 싶지 않네요. 대신 가계약금 영수증은 꼭
-              발행해주세요.
-            </MessageContainer>
-            <div
-              style={{
-                ...TYPOGRAPHY.body2.regular,
-                color: COLORS.grayscale[1300],
-              }}
-            >
-              {`🚫️ 가계약금은 법적 구속력이 약하며, 사기꾼은 이를 이용해 돈을
-              편취할 수 있습니다. 특히 '인기 매물'을 미끼로 촉박한 상황을
-              조성하는 것은 전형적인 사기 수법입니다.`}
-            </div>
-            <div
-              style={{
-                ...TYPOGRAPHY.body2.regular,
-                color: COLORS.grayscale[1300],
-              }}
-            >
-              {`✅ 가계약금 송금 전에 등기부등본을 확인하여 실소유주를 파악하고, 계약 조건을 명확히 기재한 가계약서를 작성해야 합니다. 급박한 상황에 휘말리지 않고 신중하게 판단해야 합니다.`}
-            </div>
-          </div>
+          )}
         </SelectionContainer>
         <SelectionContainer>
           <div
@@ -442,11 +433,7 @@ const LawyerPage = () => {
               color: COLORS.grayscale[1300],
             }}
           >
-            {`부동산 계약, 특히 비대면 계약 시에는 등기부등본 확인, 실소유주 확인,
-            계약서 검토 등의 절차를 반드시 거쳐야 합니다. 낯선 용어나 요구에
-            대해서는 의심하고, 관련 법률 및 절차를 직접 확인하거나 전문가의
-            도움을 받는 것이 중요합니다. '서두르게 하는 상황' 자체를 경계하고,
-            급하게 돈을 송금하지 않도록 주의해야 합니다.`}
+            {report?.recommendedAction || "리포트가 아직 생성되지 않았습니다."}
           </div>
         </SelectionContainer>
       </FlexBox>

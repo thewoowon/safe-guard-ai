@@ -66,6 +66,7 @@ const CallPage = () => {
   const [chat, setChat] = useState<string[]>([]);
   const [firstChat, setFirstChat] = useState<FirstChat | null>(null);
   const [turn, setTurn] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const handleMVideoCanPlay = () => {
     console.log("비디오가 준비되었습니다.");
@@ -107,6 +108,52 @@ const CallPage = () => {
     }
   };
 
+  const playAudio = (data: FirstChat) => {
+    console.log("메시지 전송 성공:", data);
+    const audioData = data;
+
+    console.log("오디오 데이터:", audioData);
+
+    // base64를 Blob으로 변환
+    const byteString = atob(
+      audioData.voiceSpeech.replace(/^data:audio\/mpeg;base64,/, "")
+    );
+    const byteArray = new Uint8Array(byteString.length);
+    for (let i = 0; i < byteString.length; i++) {
+      byteArray[i] = byteString.charCodeAt(i);
+    }
+    const blob = new Blob([byteArray], { type: "audio/mpeg" });
+
+    const audioUrl = URL.createObjectURL(blob);
+    const audio = new Audio(audioUrl);
+    audioObjectRef.current = audio; // 오디오 객체 저장
+    audio.addEventListener("canplaythrough", () => {
+      audio.play();
+      if (mVideoRef.current) {
+        mVideoRef.current.play().catch((error) => {
+          console.error("비디오 재생 오류:", error);
+          handleMVideoCanPlay();
+        });
+      }
+    });
+
+    console.log("오디오 재생:", audioData.speech);
+    setCommunicationContext((prev) => [
+      ...prev,
+      { content: audioData.speech, role: "assistant" },
+    ]);
+    setChat((prev) => [...prev, audioData.speech]);
+    setLoading(false); // 오디오 재생이 끝나면 로딩 상태 해제
+    audio.onended = () => {
+      setGptSpeech(false); // GPT 음성 재생 상태 해제
+      if (mVideoRef.current) {
+        mVideoRef.current.pause();
+        mVideoRef.current.currentTime = 0; // 비디오 초기화
+      }
+    }; // 오디오 재생이 끝나면 로딩 상태 해제
+    setText(`🤖 "${audioData.speech}"`);
+  };
+
   const { mutate: sendMessage } = useMutation({
     mutationFn: async (message: string) => {
       try {
@@ -139,45 +186,7 @@ const CallPage = () => {
       }
     },
     onSuccess: (data) => {
-      console.log("메시지 전송 성공:", data);
-      const audioData = data as {
-        sessionId: string;
-        speech: string;
-        turn: number;
-        voiceSpeech: string;
-      };
-
-      console.log("오디오 데이터:", audioData);
-
-      // base64를 Blob으로 변환
-      const byteString = atob(
-        audioData.voiceSpeech.replace(/^data:audio\/mpeg;base64,/, "")
-      );
-      const byteArray = new Uint8Array(byteString.length);
-      for (let i = 0; i < byteString.length; i++) {
-        byteArray[i] = byteString.charCodeAt(i);
-      }
-      const blob = new Blob([byteArray], { type: "audio/mpeg" });
-
-      const audioUrl = URL.createObjectURL(blob);
-      const audio = new Audio(audioUrl);
-      audioObjectRef.current = audio; // 오디오 객체 저장
-      audio.addEventListener("canplaythrough", () => {
-        audio.play();
-      });
-      setGptSpeech(true); // GPT 음성 재생 상태 업데이트
-
-      console.log("오디오 재생:", audioData.speech);
-      setCommunicationContext((prev) => [
-        ...prev,
-        { content: audioData.speech, role: "assistant" },
-      ]);
-      setChat((prev) => [...prev, audioData.speech]);
-      setLoading(false); // 오디오 재생이 끝나면 로딩 상태 해제
-      audio.onended = () => {
-        setGptSpeech(false); // GPT 음성 재생 상태 해제
-      }; // 오디오 재생이 끝나면 로딩 상태 해제
-      setText(`🤖 "${audioData.speech}"`);
+      playAudio(data);
     },
     onError: (error) => {
       console.error("메시지 전송 실패:", error);
@@ -276,8 +285,8 @@ const CallPage = () => {
       const firstChat = await fetchFirstChat();
       console.log("첫 번째 채팅:", firstChat);
       if (firstChat) {
+        playAudio(firstChat);
         setFirstChat(firstChat);
-        setChat((prev) => [...prev, firstChat.speech]);
         setCommunicationContext((prev) => [
           ...prev,
           { content: firstChat.speech, role: "assistant" },
@@ -296,6 +305,12 @@ const CallPage = () => {
     // utterance.pitch = 1; // 기본 음조
     // speechSynthesis.speak(utterance);
   }, []);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chat, loading]);
 
   return (
     <Container>
@@ -367,33 +382,37 @@ const CallPage = () => {
         </VideoContainer>
         <ChatContainer>
           {chat.map((message, index) => (
-            <ChatMessage key={index}>
+            <ChatMessage
+              key={index}
+              ref={scrollRef}
+              style={{ animation: "fadeIn 0.5s" }}
+            >
               <Typewriter
                 typingSpeed={20}
                 textArray={[message]}
-                onTypingStart={() => {
-                  // 비디오 애니메이션 시작
-                  if (mVideoRef.current && !isMVideoLoading && gptSpeech) {
-                    mVideoRef.current.play().catch((error) => {
-                      console.error("비디오 재생 오류:", error);
-                      handleMVideoCanPlay();
-                    });
-                  }
-                }}
-                onComplete={() => {
-                  if (index === chat.length - 1 && gptSpeech) {
-                    // 비디오 멈추기
-                    if (mVideoRef.current) {
-                      mVideoRef.current.pause();
-                      mVideoRef.current.currentTime = 0; // 비디오 초기화
-                    }
-                  }
-                }}
+                // onTypingStart={() => {
+                //   // 비디오 애니메이션 시작
+                //   if (mVideoRef.current && !isMVideoLoading && gptSpeech) {
+                //     mVideoRef.current.play().catch((error) => {
+                //       console.error("비디오 재생 오류:", error);
+                //       handleMVideoCanPlay();
+                //     });
+                //   }
+                // }}
+                // onComplete={() => {
+                //   if (index === chat.length - 1 && gptSpeech) {
+                //     // 비디오 멈추기
+                //     if (mVideoRef.current) {
+                //       mVideoRef.current.pause();
+                //       mVideoRef.current.currentTime = 0; // 비디오 초기화
+                //     }
+                //   }
+                // }}
               />
             </ChatMessage>
           ))}
           {loading && (
-            <ChatMessage>
+            <ChatMessage ref={scrollRef} style={{ animation: "fadeIn 0.5s" }}>
               <WaveText
                 style={{
                   ...TYPOGRAPHY.body1.regular,
@@ -452,7 +471,7 @@ const CallPage = () => {
               mVideoRef.current.pause(); // 비디오 일시 정지
               mVideoRef.current.currentTime = 0; // 비디오 초기화
             }
-            setIsMVideoLoading(true); // 비디오 로딩 상태로 설정
+            // setIsMVideoLoading(true); // 비디오 로딩 상태로 설정
             if (recognitionRef.current) {
               recognitionRef.current.onend = () => {
                 setStatus("onend");
@@ -465,6 +484,19 @@ const CallPage = () => {
         </Button>
         <Button
           onClick={() => {
+            // 현재 오디오 재생이 있다면 중지
+            if (audioObjectRef.current) {
+              audioObjectRef.current.pause();
+              audioObjectRef.current = null; // 오디오 객체 초기화
+              // audioObjectRef.current.currentTime = 0; // 오디오 초기화
+              setGptSpeech(false); // GPT 음성 재생 상태 해제
+            }
+
+            if (mVideoRef.current) {
+              mVideoRef.current.pause(); // 비디오 일시 정지
+              mVideoRef.current.currentTime = 0; // 비디오 초기화
+            }
+
             // 현재 음성 인식이 진행 중이면 중지
             if (recognitionRef.current && listening) {
               recognitionRef.current.stop();
@@ -592,6 +624,7 @@ const VideoContainer = styled.div`
 `;
 
 const ButtonContainer = styled.div`
+  position: relative;
   width: 100%;
   display: flex;
   justify-content: center;

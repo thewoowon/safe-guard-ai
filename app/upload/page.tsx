@@ -324,7 +324,16 @@ const ImageUploadContainer = styled.div`
   width: 100%;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  scrollbar-width: none;
+  -ms-overflow-style: none; /* IE and Edge */
+  padding-bottom: 100px;
 `;
 
 const ImageUploader = styled.div`
@@ -371,6 +380,7 @@ const ButtonContainer = styled.div`
   align-items: center;
   padding: 0 16px;
   margin-bottom: 26px;
+  z-index: 2;
 `;
 
 const Button = styled.button`

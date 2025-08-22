@@ -7,7 +7,7 @@ import styled from "@emotion/styled";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { keyframes } from "@emotion/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ReportImage from "@/components/svg/ReportImage";
 import Parthenon from "@/components/svg/Parthenon";
 import customAxios from "@/lib/axios";
@@ -18,6 +18,8 @@ const shimmer = keyframes`
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 `;
+
+type ReportGrade = "A" | "B" | "C" | "F";
 
 type Size = number | string;
 
@@ -119,7 +121,7 @@ const ResultPage = () => {
     },
   });
 
-  const createReport = async () => {
+  const createReport = useCallback(async () => {
     try {
       const response = await customAxios.post(
         "/api/simulation/report",
@@ -142,7 +144,7 @@ const ResultPage = () => {
       console.error("리포트 생성 중 오류 발생:", error);
       alert("리포트 생성 중 오류가 발생했습니다.");
     }
-  };
+  }, [sessionId]);
 
   useEffect(() => {
     if (!sessionId) {
@@ -159,7 +161,7 @@ const ResultPage = () => {
     };
 
     fetchReport();
-  }, []);
+  }, [createReport, router, sessionId]);
 
   if (isLoading) {
     return (
@@ -271,7 +273,7 @@ const ResultPage = () => {
           padding: "26px 0",
         }}
       >
-        <ReportImage type={"F"} />
+        <ReportImage type={(report?.grade as ReportGrade) || "F"} />
       </div>
       <div
         style={{
@@ -285,7 +287,14 @@ const ResultPage = () => {
         <br />
         <span
           style={{
-            color: COLORS.grayscale[700],
+            color:
+              report?.grade === "A"
+                ? COLORS.primary[500]
+                : report?.grade === "B"
+                  ? COLORS.caution.yellow[300]
+                  : report?.grade === "C"
+                    ? COLORS.caution.red[300]
+                    : COLORS.grayscale[700],
           }}
         >
           {report?.grade} Level

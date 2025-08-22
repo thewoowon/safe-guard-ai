@@ -1,5 +1,7 @@
+type ReportGrade = "A" | "B" | "C" | "F";
+
 type ReportImageProps = {
-  type: "A" | "B" | "C" | "F";
+  type: ReportGrade;
   width?: number;
   height?: number;
 };
