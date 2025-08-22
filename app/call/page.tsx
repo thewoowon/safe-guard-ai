@@ -75,6 +75,7 @@ const CallPage = () => {
 
   const handleMVideoCanPlayAndPlay = () => {
     if (mVideoRef.current) {
+      mVideoRef.current.muted = false; // 그때부터 소리 허용
       mVideoRef.current.play().catch((error) => {
         console.error("비디오 재생 오류:", error);
         handleMVideoCanPlay();
@@ -130,6 +131,7 @@ const CallPage = () => {
     audio.addEventListener("canplaythrough", () => {
       audio.play();
       if (mVideoRef.current) {
+        mVideoRef.current.muted = false; // 그때부터 소리 허용
         mVideoRef.current.play().catch((error) => {
           console.error("비디오 재생 오류:", error);
           handleMVideoCanPlay();
@@ -206,6 +208,15 @@ const CallPage = () => {
       setText("🎧 듣는 중입니다. 말해보세요!");
     } catch (err) {
       console.error("인식 시작 실패:", err);
+    }
+  };
+
+  const startSimulation = () => {
+    if (mVideoRef.current) {
+      mVideoRef.current.muted = false; // 그때부터 소리 허용
+      mVideoRef.current
+        .play()
+        .catch((e) => console.error("Video play blocked:", e));
     }
   };
 
@@ -367,6 +378,8 @@ const CallPage = () => {
           <VideoEl
             ref={mVideoRef}
             loop
+            muted // 모바일 자동재생 위해 필수
+            autoPlay // 로딩되자마자 자동재생
             preload="auto"
             playsInline
             // 더 일찍: onLoadedMetadata / 프레임 준비: onLoadedData / 실제 재생 시작: onPlaying
