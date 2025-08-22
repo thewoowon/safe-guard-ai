@@ -256,7 +256,7 @@ const MyPage = () => {
                   <div
                     onClick={() => {
                       router.push(
-                        `/chat/simulation/result?reportId=${report.id}`
+                        `/chat/simulation/result/view?reportId=${report.id}`
                       );
                     }}
                     style={{
@@ -324,7 +324,7 @@ const MyPage = () => {
                   </div>
                   <div
                     onClick={() => {
-                      router.push(`/chat/lawyer?reportId=${report.id}`);
+                      router.push(`/chat/lawyer/view?reportId=${report.id}`);
                     }}
                     style={{
                       display: "flex",
