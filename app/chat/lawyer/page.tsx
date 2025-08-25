@@ -309,7 +309,7 @@ const LawyerPage = () => {
           padding: "26px 0",
         }}
       >
-        <ReportImage type={"F"} />
+        <ReportImage type={report?.grade} />
       </div>
       <div
         style={{
